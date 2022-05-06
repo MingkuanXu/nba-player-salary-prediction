@@ -106,35 +106,52 @@ hist(df_players$salary)
 
 ### Appendix B - Variable Distribution
 
-```{r fig.height = 9}
-par(mfrow=c(5,4))
-hist(df_appendix_b$age)
-hist(df_appendix_b$game)
-hist(df_appendix_b$game_starting)
-hist(df_appendix_b$minute)
-hist(df_appendix_b$x3p)
-hist(df_appendix_b$x3p_attempt)
-hist(df_appendix_b$x2p)
-hist(df_appendix_b$x2p_attempt)
-hist(df_appendix_b$free_throw)
-hist(df_appendix_b$ft_attempt)
-hist(df_appendix_b$offensive_rb)
-hist(df_appendix_b$defenssive_rb)
-hist(df_appendix_b$assistance)
-hist(df_appendix_b$steal)
-hist(df_appendix_b$block)
-hist(df_appendix_b$turnover)
-hist(df_appendix_b$personal_foul)
-hist(df_appendix_b$point)
-hist(df_appendix_b$salary)
+```{r fig.height = 6}
+par(mfrow=c(3,3))
+hist(df_appendix_b$age,main = "age")
+hist(df_appendix_b$game,main = "game")
+hist(df_appendix_b$game_starting,main = "game_starting")
+hist(df_appendix_b$minute,main = "minute")
+hist(df_appendix_b$field_goal,main = "field_goal")
+hist(df_appendix_b$fg_attempt,main = "fg_attempt")
+hist(df_appendix_b$x3p,main = "x3p")
+hist(df_appendix_b$x3p_attempt,main = "x3p_attempt")
+hist(df_appendix_b$x2p,main = "x2p")
+#mtext("Distribution of numeric Variables",side = 3)
+```
+
+
+```{r fig.height = 6}
+par(mfrow=c(3,3))
+hist(df_appendix_b$x2p_attempt,main = "x2p_attempt")
+hist(df_appendix_b$free_throw,main = "free_throw")
+hist(df_appendix_b$ft_attempt,main = "ft_attempt")
+hist(df_appendix_b$offensive_rb,main = "offensive_rb")
+hist(df_appendix_b$defenssive_rb,main = "defenssive_rb")
+hist(df_appendix_b$total_rb,main = "total_rb")
+hist(df_appendix_b$assistance,main = "assistance")
+hist(df_appendix_b$steal,main = "steal")
+hist(df_appendix_b$block,main = "block")
+```
+
+
+```{r fig.height = 2}
+par(mfrow=c(1,3))
+hist(df_appendix_b$turnover,main = "turnover")
+hist(df_appendix_b$personal_foul,main = "personal foul")
+hist(df_appendix_b$point,main = "point")
+```
+
+
+```{r}
+hist(df_appendix_b$salary,main = "salary")
 ```
 
 \newpage
 
 ### Correlation Analysis
 
-```{r fig.height = 3}
-par(mfrow=c(1,2))
+```{r}
 
 df_corr_1 = df_players %>% 
   select(-player, -team,-position)
