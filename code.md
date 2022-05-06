@@ -25,3 +25,39 @@ in our data preperation:
     existing variables.
 
 The final cleaned dataset has 442 records and 24 variables.
+
+### Univariate analysis
+
+The following plots show distribution of each univariable. For
+categorical variables `team` and `pos`, they are dsitributed quite
+evenly. There are 30 unique values in `team` and 5 in `pos`. We may
+consider remove `team` for it may result in too many dummy variables in
+the model.
+
+![](code_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
+
+For numeric variables, some of them (`gs`, `ft`, `orb`,`blk`), including
+response `salary` are skewed, with some players have extremely high
+salary. Visualization for all variables are enclosed in Appendix B
+
+![](code_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+### Appendix B - Variable Distribution
+
+![](code_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+
+### Correlation Analysis
+
+![](code_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+### Analyzing trends in data
+
+From numeric variables, we found that `stl`,`x3p`, `age`,`gs` seem to
+have some non-linear trends.
+
+![](code_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->![](code_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->![](code_files/figure-gfm/unnamed-chunk-5-3.png)<!-- -->
+
+From categorical variable `position`, extremely high values in salary
+show in all positions and some teams.
+
+![](code_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->

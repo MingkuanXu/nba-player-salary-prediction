@@ -74,3 +74,105 @@ df_players = df_players %>%
 colnames(df_players) = c("player", "team", "position", "age", "game","game_starting" ,"minute","field_goal", "fg_attempt", "x3p", "x3p_attempt" ,"x2p", "x2p_attempt",   "free_throw",   "ft_attempt", "offensive_rb", "defenssive_rb",  "total_rb" ,   "assistance" ,   "steal" , "block",    "turnover",  "personal_foul", "point", "salary")
 
 ```
+
+
+\newpage
+
+### Univariate analysis
+
+The following plots show distribution of each univariable. For categorical variables `team` and `pos`, they are dsitributed quite evenly. There are 30 unique values in `team` and 5 in `pos`. We may consider remove `team` for it may result in too many dummy variables in the model.
+
+```{r fig.height = 3}
+par(mfrow=c(1,2))
+plot(df_players$team, main = "team")
+plot(df_players$position, main = "position")
+```
+
+For numeric variables, some of them (`gs`, `ft`, `orb`,`blk`), including response `salary` are skewed, with some players have extremely high salary. Visualization for all variables are enclosed in Appendix B
+
+
+```{r fig.height = 4}
+
+df_appendix_b = df_players
+
+par(mfrow=c(2,3))
+hist(df_players$game_starting)
+hist(df_players$free_throw)
+hist(df_players$offensive_rb)
+hist(df_players$block)
+hist(df_players$salary)
+```
+
+
+### Appendix B - Variable Distribution
+
+```{r fig.height = 9}
+par(mfrow=c(5,4))
+hist(df_appendix_b$age)
+hist(df_appendix_b$game)
+hist(df_appendix_b$game_starting)
+hist(df_appendix_b$minute)
+hist(df_appendix_b$x3p)
+hist(df_appendix_b$x3p_attempt)
+hist(df_appendix_b$x2p)
+hist(df_appendix_b$x2p_attempt)
+hist(df_appendix_b$free_throw)
+hist(df_appendix_b$ft_attempt)
+hist(df_appendix_b$offensive_rb)
+hist(df_appendix_b$defenssive_rb)
+hist(df_appendix_b$assistance)
+hist(df_appendix_b$steal)
+hist(df_appendix_b$block)
+hist(df_appendix_b$turnover)
+hist(df_appendix_b$personal_foul)
+hist(df_appendix_b$point)
+hist(df_appendix_b$salary)
+```
+
+\newpage
+
+### Correlation Analysis
+
+```{r fig.height = 3}
+par(mfrow=c(1,2))
+
+df_corr_1 = df_players %>% 
+  select(-player, -team,-position)
+
+corrplot(cor(df_corr_1),type = "lower")
+
+```
+
+
+\newpage
+
+### Analyzing trends in data
+
+From numeric variables, we found that `stl`,`x3p`, `age`,`gs` seem to have some non-linear trends.
+
+```{r, fig.height=4}
+theme1 <- trellis.par.get()
+theme1$plot.symbol$col <- rgb(.2, .4, .2, .5)
+theme1$plot.symbol$pch <- 16
+theme1$plot.line$col <- rgb(.8, .1, .1, 1)
+theme1$plot.line$lwd <- 2
+theme1$strip.background$col <- rgb(.0, .2, .6, .2)
+trellis.par.set(theme1)
+
+featurePlot(df_players[4:24], df_players$salary, plot = "scatter", labels = c("","Y"),
+            type = c("p"), layout = c(5,2))
+```
+
+From categorical variable `position`, extremely high values in salary show in all positions and some teams.
+
+```{r fig.height=4}
+df_players %>% 
+  mutate(
+    pos = fct_reorder(position,salary)
+  ) %>% 
+  ggplot(aes(x = position, y = salary, group = pos, fill = pos))+
+  geom_boxplot()
+
+```
+
+
