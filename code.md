@@ -15,23 +15,20 @@ Distributions of the two categorical variables, `team` and `position`.
 
 Distributions of other numeric variables.
 
-![](code_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
-
-![](code_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
-![](code_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](code_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->![](code_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->![](code_files/figure-gfm/unnamed-chunk-2-3.png)<!-- -->
 
 ### Correlation Analysis
 
-![](code_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](code_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
 ### Analyzing trends in data
 
 From numeric variables, we found that `stl`,`x3p`, `age`,`gs` seem to
 have some non-linear trends.
 
-![](code_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->![](code_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->![](code_files/figure-gfm/unnamed-chunk-6-3.png)<!-- -->
+![](code_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 From categorical variable `position`, extremely high values in salary
 show in all positions and some teams.
 
-![](code_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](code_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->

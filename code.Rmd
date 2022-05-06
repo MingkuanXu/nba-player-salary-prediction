@@ -7,7 +7,7 @@ output: github_document
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,dpi=300)
 library(tidyverse)
 library(caret)
 library(patchwork)
@@ -72,9 +72,10 @@ colnames(df_players) = c("player", "team", "position", "age", "game","game_start
 
 Distributions of the two categorical variables, `team` and `position`.
 
-```{r fig.height = 3}
+```{r}
 par(mfrow=c(1,2))
-plot_team = ggplot(df_players) + geom_bar(aes(team)) + theme_bw()
+plot_team = ggplot(df_players) + geom_bar(aes(team)) + 
+  scale_x_discrete(guide = guide_axis(check.overlap = TRUE))+ theme_bw()
 plot_team
 plot_position = ggplot(df_players) + geom_bar(aes(position)) + theme_bw()
 plot_position
@@ -89,30 +90,24 @@ plot_data_column = function (data, column) {
         xlab(column) + theme_bw(base_size = 10)
 }
 
-histograms_a <- lapply(colnames(df_players)[4:12], 
+histograms <- lapply(colnames(df_players)[4:24], 
                        plot_data_column, data = df_players)
-figure_a = ggarrange(plotlist = histograms_a, 
+
+figure_a = ggarrange(plotlist = histograms[1:9], 
           ncol = 3, nrow = 3)
+
 annotate_figure(figure_a, 
                 top = text_grob("Histograms of Predictive Variables (Group A)", 
                                 face = "bold", size = 15))
-```
 
-```{r dpi=300}
 
-histograms_b <- lapply(colnames(df_players)[13:21], 
-                       plot_data_column, data = df_players)
-figure_b = ggarrange(plotlist = histograms_b, 
+figure_b = ggarrange(plotlist = histograms[10:18], 
           ncol = 3, nrow = 3)
 annotate_figure(figure_b, 
                 top = text_grob("Histograms of Predictive Variables (Group B)", 
                                 face = "bold", size = 15))
-```
-```{r dpi=300}
 
-histograms_c <- lapply(colnames(df_players)[22:24], 
-                       plot_data_column, data = df_players)
-figure_c = ggarrange(plotlist = histograms_c, 
+figure_c = ggarrange(plotlist = histograms[19:21],
           ncol = 3, nrow = 3)
 annotate_figure(figure_c, 
                 top = text_grob("Histograms of Predictive Variables (Group C)", 
@@ -138,15 +133,21 @@ From numeric variables, we found that `stl`,`x3p`, `age`,`gs` seem to have some 
 
 ```{r, fig.height=4}
 theme1 <- trellis.par.get()
-theme1$plot.symbol$col <- rgb(.2, .4, .2, .5)
+theme1$plot.symbol$col <- rgb(0, 0, 0, 1) 
 theme1$plot.symbol$pch <- 16
-theme1$plot.line$col <- rgb(.8, .1, .1, 1)
-theme1$plot.line$lwd <- 2
-theme1$strip.background$col <- rgb(.0, .2, .6, .2)
+theme1$plot.line$col <- rgb(1, .1, .1, 1) 
+theme1$plot.line$lwd <- 2 
+theme1$strip.background$col <- rgb(.0, .2, .6, .2) 
 trellis.par.set(theme1)
 
-featurePlot(df_players[4:24], df_players$salary, plot = "scatter", labels = c("","Y"),
-            type = c("p"), layout = c(5,2))
+df_features = df_players[4:24]
+featurePlot(x = df_features, 
+            y = df_players$salary,
+            plot = "scatter",
+            # span = .5,
+            labels = c("Predictors","Player Salary (Millions)"), 
+            type = c("p", "smooth"), 
+            layout = c(7, 3))
 ```
 
 From categorical variable `position`, extremely high values in salary show in all positions and some teams.
@@ -157,7 +158,7 @@ df_players %>%
     pos = fct_reorder(position,salary)
   ) %>% 
   ggplot(aes(x = position, y = salary, group = pos, fill = pos))+
-  geom_boxplot()
+  geom_boxplot() + theme_bw()
 
 ```
 
