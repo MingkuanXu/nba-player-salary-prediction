@@ -5,9 +5,6 @@ date: "5/6/2022"
 output: github_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
@@ -31,7 +28,6 @@ We will conduct data analysis and model construction based on two datasets on NB
  - Two original datasets are inner joined by players and teams
  - Keep only one record with most number of games played for each of players, given a player may transfer to other teams during the session and have multiple records.
  - Remove 5 variables with missing values caused by division of other existing variables. 
- - Remove variable representing the player name. 
 
 The final cleaned dataset has 442 records and 24 variables. 
 
@@ -57,7 +53,7 @@ df_players = df_players %>%
 
 # Removed variables with missing data and resulted from division of other variables
 df_players = df_players %>% 
-  select(-x3p_percent, -ft_percent, -fg_percent,-x2p_percent,-e_fg_percent,-player)
+  select(-x3p_percent, -ft_percent, -fg_percent,-x2p_percent,-e_fg_percent)
 
 #The final generated dataset for use: df_player.
 ```
@@ -72,7 +68,9 @@ df_players = df_players %>%
   select(-symbol)%>% 
   mutate(salary = as.numeric(salary)/1000000,
          team = factor(team),
-         pos = factor(pos))%>% 
+         pos = factor(pos)) %>% 
   relocate(salary, .after = last_col())
+
+colnames(df_players) = c("player", "team", "position", "age", "game","game_starting" ,"minute","field_goal", "fg_attempt", "x3p", "x3p_attempt" ,"x2p", "x2p_attempt",   "free_throw",   "ft_attempt", "offensive_rb", "defenssive_rb",  "total_rb" ,   "assistance" ,   "steal" , "block",    "turnover",  "personal_foul", "point", "salary")
 
 ```
