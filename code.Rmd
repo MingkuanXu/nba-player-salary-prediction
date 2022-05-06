@@ -15,6 +15,7 @@ library(mgcv)
 library(earth)
 library(corrplot)
 library(vip)
+library(ggpubr)
 
 ```
 
@@ -120,18 +121,56 @@ hist(df_appendix_b$x2p,main = "x2p")
 #mtext("Distribution of numeric Variables",side = 3)
 ```
 
-
 ```{r fig.height = 6}
 par(mfrow=c(3,3))
-hist(df_appendix_b$x2p_attempt,main = "x2p_attempt")
-hist(df_appendix_b$free_throw,main = "free_throw")
-hist(df_appendix_b$ft_attempt,main = "ft_attempt")
-hist(df_appendix_b$offensive_rb,main = "offensive_rb")
-hist(df_appendix_b$defenssive_rb,main = "defenssive_rb")
-hist(df_appendix_b$total_rb,main = "total_rb")
-hist(df_appendix_b$assistance,main = "assistance")
-hist(df_appendix_b$steal,main = "steal")
-hist(df_appendix_b$block,main = "block")
+hist(df_appendix_b$age,main = "age")
+hist(df_appendix_b$game,main = "game")
+hist(df_appendix_b$game_starting,main = "game_starting")
+hist(df_appendix_b$minute,main = "minute")
+hist(df_appendix_b$field_goal,main = "field_goal")
+hist(df_appendix_b$fg_attempt,main = "fg_attempt")
+hist(df_appendix_b$x3p,main = "x3p")
+hist(df_appendix_b$x3p_attempt,main = "x3p_attempt")
+hist(df_appendix_b$x2p,main = "x2p")
+#mtext("Distribution of numeric Variables",side = 3)
+```
+
+
+```{r dpi=300}
+plot_data_column = function (data, column) {
+    ggplot(data, aes_string(x = column)) +
+        geom_histogram(bins=15) +
+        xlab(column) + theme_bw(base_size = 10)
+}
+
+histograms_a <- lapply(colnames(df_players)[4:12], 
+                       plot_data_column, data = df_players)
+figure_a = ggarrange(plotlist = histograms_a, 
+          ncol = 3, nrow = 3)
+annotate_figure(figure_a, 
+                top = text_grob("Histograms of Predictive Variables (Group A)", 
+                                face = "bold", size = 15))
+```
+
+```{r dpi=300}
+
+histograms_b <- lapply(colnames(df_players)[13:21], 
+                       plot_data_column, data = df_players)
+figure_b = ggarrange(plotlist = histograms_b, 
+          ncol = 3, nrow = 3)
+annotate_figure(figure_b, 
+                top = text_grob("Histograms of Predictive Variables (Group B)", 
+                                face = "bold", size = 15))
+```
+```{r dpi=300}
+
+histograms_c <- lapply(colnames(df_players)[22:24], 
+                       plot_data_column, data = df_players)
+figure_c = ggarrange(plotlist = histograms_c, 
+          ncol = 3, nrow = 3)
+annotate_figure(figure_c, 
+                top = text_grob("Histograms of Predictive Variables (Group C)", 
+                                face = "bold", size = 15))
 ```
 
 

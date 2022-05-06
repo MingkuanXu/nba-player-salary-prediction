@@ -51,19 +51,24 @@ salary. Visualization for all variables are enclosed in Appendix B
 ![](code_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 ![](code_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](code_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
+![](code_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+
+![](code_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 ### Correlation Analysis
 
-![](code_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](code_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 ### Analyzing trends in data
 
 From numeric variables, we found that `stl`,`x3p`, `age`,`gs` seem to
 have some non-linear trends.
 
-![](code_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->![](code_files/figure-gfm/unnamed-chunk-8-2.png)<!-- -->![](code_files/figure-gfm/unnamed-chunk-8-3.png)<!-- -->
+![](code_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->![](code_files/figure-gfm/unnamed-chunk-11-2.png)<!-- -->![](code_files/figure-gfm/unnamed-chunk-11-3.png)<!-- -->
 
 From categorical variable `position`, extremely high values in salary
 show in all positions and some teams.
 
-![](code_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](code_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
