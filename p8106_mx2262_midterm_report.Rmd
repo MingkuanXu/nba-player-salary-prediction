@@ -1,0 +1,354 @@
+---
+title: "P8106 Midterm Report"
+author: "Mingkuan Xu (mx2262)"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+For any team in the National Basketball Association (NBA), a key strategy to win more games is to properly allocate their salary cap - an agreement that places a limit on the amount of money that a team can spend on players' salaries. How to evaluate the performance of each NBA player and give a suitable level of salary is a therefore complicated problem.  In this project, we intend to predict the salary of NBA players in the 2021-2022 season based on their game statistics. We collected game statistics that are commonly used to evaluate players from the NBA official website, built both linear and non-linear models, including linear regression, ridge regression, lasso regression, GAM and MARS on selected feature variables, and compared these models to determine a final predictive model. 
+
+## Data Preprocessing
+
+We used two important data sets in this project:
+
+- **NBA Player Salary  (2021-2022)**: that contains the amount of salary each player received. [(**Link**)](https://www.basketball-reference.com/contracts/players.html)
+
+
+- **NBA Player Stats (2021-2022)** that contains the game statistics of each player. [(**Link**)](https://www.basketball-reference.com/leagues/NBA_2022_per_game.html)
+
+After cleaning up and joining the two data sets based on player's name and team, we obtained a dataframe with 442 rows and the following columns:
+
+- `Pos` -- A categorical variable of the player's position (C, PF, SF, SG, PG)
+
+- `Age` -- Player's age on February 1 of the season
+
+- `Team` -- A categorical variable of the player's playig team
+
+- `G` -- Number of games played
+
+- `GS` -- Number of games played as a starter
+
+- `MP` -- Minutes played per game
+
+- `FG` -- Field goals per game
+
+- `FGA` -- Field goal attempts per game
+
+- `FG%` -- Field goal percentage
+
+- `3P` -- 3-point field goals per game
+
+- `3PA` -- 3-point field goal attempts per game
+
+- `3P%` -- 3-point field goal percentage
+
+- `2P` -- 2-point field goals per game
+
+- `2PA` -- 2-point field goal attempts per game
+
+- `2P%` -- 2-point field goal percentage
+
+- `FT` -- Free throws per game
+
+- `FTA` -- Free throw attempts per game
+
+- `FT%` -- Free throw percentage
+
+- `ORB` -- Offensive rebounds per game
+
+- `DRB` -- Defensive rebounds per game
+
+- `TRB` -- Total rebounds per game
+
+- `AST` -- Assists per game
+
+- `STL` -- Steals per game
+
+- `BLK` -- Blocks per game
+
+- `TOV` -- Turnovers per game
+
+- `PF` -- Personal fouls per game
+
+- `PTS` -- Points per game
+
+Given that some players do not have any field goal, 2-point, 3-point, or free throw attempts, resulting in NAs in `FG%`, `2P%`, `3P%`, and `FT%`, we simply discarded these columns. Notice that dropping these columns will not result in any loss of information, as their values can be calculated using other columns (since `percentage` = `goals`/`attempts`).
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+
+library(tidyverse)
+library(corrplot)
+library(caret)
+library(mgcv)
+```
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+df_salary = read_csv("NBA_season2122_player_salary.csv") %>%
+  janitor::clean_names() %>%
+  select(Player=x2,Team=x3,Salary=salary_4) %>%
+  na.omit()
+
+df_salary = df_salary[-1,]
+
+df_stats = read_csv("NBA_season2122_player_stats.csv") %>%
+  rename(Team=Tm) %>%
+  select(-Rk)
+
+df_players = inner_join(x=df_salary,y=df_stats,by=c("Player","Team")) %>%
+  separate(col = Salary,sep=1,into=c("Dollar","Salary")) %>% select(-Dollar) %>%
+  mutate(Salary=as.numeric(Salary)/1000000) %>%
+  distinct() %>%
+  relocate(Salary,.after = last_col())
+  # Remove dollar sign
+
+df_players = df_players %>%
+  select(-"FG%",-"3P%",-"eFG%",-"FT%",-"2P%") 
+
+## Keep largest number of games for the same player
+df_players = df_players %>% 
+  arrange(Player,desc(G)) %>% 
+  distinct(Player,.keep_all = TRUE)
+
+df_players = df_players %>%
+  janitor::clean_names() %>%
+  mutate(team=factor(team),
+         pos=factor(pos)) %>%
+  select(-player)
+```
+
+
+## Exploratory Analysis/Visualization
+
+After splitting the dataset into training (80%) and test (20%) set, we started examining patterns  of data on the training set. We did exploratory analysis, including the box plots showing the distribution of variables, the correlation heat map, and feature maps.
+
+```{r echo=FALSE,message=FALSE,warning=FALSE}
+
+index_train <- createDataPartition(y = df_players$salary, p = 0.8, list = FALSE) 
+df_train <- df_players[index_train, ]
+df_test <- df_players[-index_train, ]
+
+```
+
+```{r echo=FALSE,message=FALSE,warning=FALSE,fig.cap="\\label{fig:figs}Correlation Heatmap of Player Salary and Game Statistics"}
+
+corrplot(cor(df_train %>% select(-team,-pos)), 
+         method = "circle", 
+         type = "full") 
+```
+
+```{r echo=FALSE,message=FALSE,warning=FALSE,fig.cap="\\label{fig:figs}Feature Maps of Player Salary and Game Statistics"}
+theme1 <- trellis.par.get()
+theme1$plot.symbol$col <- rgb(0, 0, 0, 1) 
+theme1$plot.symbol$pch <- 16
+theme1$plot.line$col <- rgb(1, .1, .1, 1) 
+theme1$plot.line$lwd <- 2 
+theme1$strip.background$col <- rgb(.0, .2, .6, .2) 
+trellis.par.set(theme1)
+
+df_features = df_train %>%
+  select(x2p,fg,gs,mp,tov,drb,ast,ft,pts)
+featurePlot(x = df_features, 
+            y = df_train$salary,
+            plot = "scatter",
+            # span = .5,
+            labels = c("Predictors","Player Salary (Millions)"), 
+            type = c("p", "smooth"), 
+            layout = c(3, 3))
+```
+
+From the above correlation heatmap and the feature maps, we could identify positive correlations between some predictive variables and the response variable. However, from the correlation heat map, it is obvious that multicolinearity could be a problem, which we may consider using models such as ridge regression or lasso regression to fix; the feature maps also demonstrated that some correlations are non-linear, which we may consider using GAM or MARS to address.
+
+## Models
+
+### Models Trained
+Based on the exploratory analysis, we built 7 different models in total: a simple Linear Regression model, a Ridge Regression model, a Lasso Regression model, an Elastic-Net model, a Principal Component Regression (PCR) model, a Generalized Addictive (GAM) model, and a Multivariate Adaptive Regression Splines (MARS) model (see codes.Rmd for details).
+
+### Parameter Tunings
+
+In fitting the ridge/lasso/elastic-net models, I tried various ranges of lambda. The optimal lambda value for the ridge regression is $3.57$, whereas the optimal lambda value for the lasso regression is $0.200$. The elastic net model reached its best tune at $\alpha = 1$, i.e. a lasso model. 
+
+In attempting to fit the MARS model, I noticed that the RMSE increased drastically when `degree` is over 3 and `n_prune` is over 8. Therefore, I finally chose the range of degrees as 1:3, and range of `n_prune` as 2:8. I experienced difficulties fitting the MARS, however, that some times when I ran the code chunk, despite using the same script and the same random seed, the resulting model will be a slightly different with different RMSEs. This led to some potential inconsistencies in explaining the model coefficient at the end of the report. In the future, this problem can be fixed by saving the model object locally and reading from the file, instead of fitting the model again. 
+
+
+```{r message=FALSE,warning=FALSE,echo=FALSE}
+
+set.seed(8106)
+
+df_train_2 = model.matrix(salary ~ ., df_train)[ ,-1]
+df_test_2 = model.matrix(salary ~ .,df_test)[ ,-1]
+x = df_train_2
+y = df_train %>% pull(salary)
+
+ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
+
+# Least Square
+lm.fit <- train(x, y, method = "lm", trControl = ctrl1)
+
+# summary(lm.fit)
+lm.pred <- predict(lm.fit, newdata = df_test_2)
+lm.mse = mean((lm.pred - df_test$salary)^2)
+# lm.mse
+
+# Ridge
+ridge.fit <- train(x, y,
+                   method = "glmnet",
+                   tuneGrid = expand.grid(alpha = 0,
+                                          lambda = exp(seq(10, -2, length=100))), 
+                   # preProc =c("center", "scale"),
+                   trControl = ctrl1)
+
+p.ridge = plot(ridge.fit, xTrans = log, main="Ridge Regression")
+# coef(ridge.fit$finalModel, ridge.fit$bestTune$lambda)
+ridge.pred <- predict(ridge.fit, newdata = df_test_2)
+ridge.mse = mean((ridge.pred - df_test$salary)^2)
+# ridge.mse
+```
+
+```{r message=FALSE,warning=FALSE,echo=FALSE,fig.cap="\\label{fig:figs}Parameter Tuning of Ridge/Lasso Regression",include=FALSE}
+# Lasso
+lasso.fit <- train(x, y,
+                   method = "glmnet",
+                   tuneGrid = expand.grid(alpha = 1,
+                                          lambda = exp(seq(3, -3, length=100))),
+                   trControl = ctrl1)
+p.lasso = plot(lasso.fit, xTrans = log, main="Lasso Regression")
+
+gridExtra::grid.arrange(p.ridge, p.lasso, ncol = 2)
+
+# coef(lasso.fit$finalModel, lasso.fit$bestTune$lambda)
+lasso.pred <- predict(lasso.fit, newdata = df_test_2)
+lasso.mse = mean((lasso.pred - df_test$salary)^2)
+# lasso.mse
+
+```
+
+```{r echo=FALSE,fig.cap="\\label{fig:figs}Parameter Tuning of Elastic Net",include=FALSE}
+# regularized regression
+elnet.fit <- train(
+  x,y,method = "glmnet",
+  tuneGrid = expand.grid(alpha = seq(0, 1, length = 11),
+                         lambda = exp(seq(3, -3, length=100))),
+  trControl = ctrl1)
+
+myCol<- rainbow(25)
+myPar <- list(superpose.symbol = list(col = myCol),
+              superpose.line = list(col = myCol)) 
+
+plot(elnet.fit, par.settings = myPar)
+
+elnet.pred = predict(elnet.fit, newdata = df_test_2)
+elnet.mse = mean((elnet.pred - df_test$salary)^2)
+
+# principal component regression
+
+pcr.fit <- train(
+  x,y,method = "pcr",
+    tuneLength = 20,
+  trControl = ctrl1)
+
+pcr.pred = predict(pcr.fit, newdata = df_test_2)
+pcr.mse = mean((pcr.pred - df_test$salary)^2)
+```
+
+```{r echo=FALSE,message=FALSE,warning=FALSE,fig.cap="\\label{fig:figs}Parameter Tuning of MARS model"}
+
+set.seed(8106)
+gam.fit <- gam(salary~
+                 s(age)+s(g)+s(gs)+s(ft)+s(fta)+s(drb)+s(ast)+s(blk)+s(pf)+s(pts),
+              data = df_train)
+gam.pred = predict(gam.fit, newdata = df_test)
+gam.mse = mean((gam.pred - df_test$salary)^2)
+#gam.mse
+
+mars_grid <- expand.grid(degree = 1:3, 
+                         nprune = 2:8)
+
+
+
+mars.fit <- train(x, y,
+                  method = "earth",
+                  tuneGrid = mars_grid,
+                  trControl = ctrl1)
+
+# mars.fit$bestTune
+
+ggplot(mars.fit)+theme_bw()
+
+mars.pred = predict(mars.fit, newdata = df_test_2)
+mars.mse = mean((df_test$salary - mars.pred)^2)
+#mars.mse
+```
+
+
+## Results & Discussion 
+
+To compare the performance of these models, we listed their MAE, RMSE, R-square, and also RMSE on the test sets:
+
+```{r warning=FALSE,message=FALSE,echo=FALSE}
+resamp <- resamples(list(LeastSquare = lm.fit,Ridge = ridge.fit,Lasso = lasso.fit,ElasticNet=elnet.fit,PCR = pcr.fit))
+
+summary(resamp)$statistics$RMSE %>% knitr::kable(caption = "Table 1: RMSE of Different Linear Models",digits=2)
+
+
+# lm.stats = as.data.frame(lm.fit$resample) %>%
+#   select(-Resample) %>%
+#   colMeans() %>%
+#   round(digits = 2)
+# 
+# lasso.stats = as.data.frame(lasso.fit$resample) %>%
+#   select(-Resample) %>%
+#   colMeans() %>%
+#   round(digits = 2)
+#   
+# ridge.stats = as.data.frame(ridge.fit$resample) %>%
+#   select(-Resample) %>%
+#   colMeans() %>%
+#   round(digits = 2)
+# 
+# df_results = as.data.frame(cbind(lm.stats,ridge.stats,lasso.stats)) %>%
+#   rename("Least-Squared"=lm.stats,Ridge=ridge.stats,Lasso=lasso.stats) 
+
+# df_results %>% knitr::kable(caption = "Table 1: Training RMSE of Different Linear Models")
+```
+
+```{r warning=FALSE,message=FALSE,echo=FALSE}
+test_RMSE <- data.frame (
+  Methods = c("Linear", "Lasso", "Rigde","ElasticNet","PCR","GAM","MARS"),
+  Test_MSE = c(lm.mse,lasso.mse,ridge.mse,elnet.mse,pcr.mse,gam.mse,mars.mse)
+) %>%
+  mutate(RMSE=round(sqrt(Test_MSE),digit=2)) %>%
+  select(-Test_MSE) %>%
+  t() %>%
+  as.data.frame()
+
+colnames(test_RMSE) <- test_RMSE[1,]
+test_RMSE <- test_RMSE[-1, ] 
+
+
+test_RMSE %>% knitr::kable(caption = "Table 2: RMSE of Different Models on Test Set")
+```
+In table 1, we compared the 5 models: standard linear regression, ridge regression, and lasso regression, elastic net, and principle component regression. Compared to the basic linear model, while all other models showed some improvements, it can be concluded that the PCR model provided a better fitting of the data in terms of RMSE. This can be explained by the fact that the PCA technique used by PCR regression is well-suited for dataset showing high levels of multicollinearity in this case. 
+
+In table 2. we compared the performance of the 7 models in predicting new data in the test set. The MARS model achieved a much better performance than all other 6 models, because it better captured the non-linear association between the predictive variables and the response variable. 
+
+Finally, we took a closer look of the coefficients of the MARS model:
+
+```{r echo=FALSE}
+coef(mars.fit$finalModel) %>% knitr::kable(digits = 3,
+                                           caption = "Table 3: Coeeficients of the MARS Model")
+```
+
+From the coefficients, we observed that age and points earned are two important factors, which is what we expected. While most players entered the league at similar ages, they will have their player contract renewed after 4 years - that is why some talented rookies usually get a skyrocketed salary at the age of 24~25; on the other hand, older players with less score also have less potential compared to their younger counterparts, which explains why after a certain age, there is a negative correlation between age and salary.
+
+
+## Conclusion
+
+Above all, after utilizing different methods introduced in this course to fit predictive models, we came up with a optimal MARS model, which best captures the underlying patterns of the player's data and gives reasonable predictions on a player's salary based on game statistics. 
+
+
+
