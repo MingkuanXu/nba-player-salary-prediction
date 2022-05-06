@@ -188,3 +188,10 @@ df_players %>%
 ```
 
 
+```{r}
+# Data partition
+set.seed(8106)
+
+indexTrain <- createDataPartition(y = df_players$salary, p = 0.75, list = FALSE, times = 1)
+ctrl1 <- trainControl(method = "cv", number = 10, repeats = 5)
+```
