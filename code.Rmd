@@ -20,17 +20,7 @@ library(ggpubr)
 ```
 
 
-## Introduction
-
-NBA players are considered to be among the highest-paid athletes in the world. Despite even the minimum wage in the NBA is way higher than that of any professional league in North America, there's a large gap between NBA stars and ordinary players[1]. In this project, we are interested in finding the factors that influence salary of NBA players. We will also develop a model to predict the salary.
-
-We will conduct data analysis and model construction based on two datasets on NBA players' contracted salary [2] and performance statistics per game [3] in 2021-2022. The following steps are included in our data preperation:
-
- - Two original datasets are inner joined by players and teams
- - Keep only one record with most number of games played for each of players, given a player may transfer to other teams during the session and have multiple records.
- - Remove 5 variables with missing values caused by division of other existing variables. 
-
-The final cleaned dataset has 442 records and 24 variables. 
+## Part 0 - Data Preprocessing
 
 ```{r joining datasets}
 df_salary = read_csv("NBA_season2122_player_salary.csv") %>%
@@ -56,7 +46,7 @@ df_players = df_players %>%
 df_players = df_players %>% 
   select(-x3p_percent, -ft_percent, -fg_percent,-x2p_percent,-e_fg_percent)
 
-#The final generated dataset for use: df_player.
+# The final generated dataset for use: df_player.
 ```
 
 
@@ -76,65 +66,21 @@ colnames(df_players) = c("player", "team", "position", "age", "game","game_start
 
 ```
 
+## Part 1 - Exploratory Analysis 
 
-\newpage
+### Univariate Analysis
 
-### Univariate analysis
-
-The following plots show distribution of each univariable. For categorical variables `team` and `pos`, they are dsitributed quite evenly. There are 30 unique values in `team` and 5 in `pos`. We may consider remove `team` for it may result in too many dummy variables in the model.
+Distributions of the two categorical variables, `team` and `position`.
 
 ```{r fig.height = 3}
 par(mfrow=c(1,2))
-plot(df_players$team, main = "team")
-plot(df_players$position, main = "position")
+plot_team = ggplot(df_players) + geom_bar(aes(team)) + theme_bw()
+plot_team
+plot_position = ggplot(df_players) + geom_bar(aes(position)) + theme_bw()
+plot_position
 ```
 
-For numeric variables, some of them (`gs`, `ft`, `orb`,`blk`), including response `salary` are skewed, with some players have extremely high salary. Visualization for all variables are enclosed in Appendix B
-
-
-```{r fig.height = 4}
-
-df_appendix_b = df_players
-
-par(mfrow=c(2,3))
-hist(df_players$game_starting)
-hist(df_players$free_throw)
-hist(df_players$offensive_rb)
-hist(df_players$block)
-hist(df_players$salary)
-```
-
-
-### Appendix B - Variable Distribution
-
-```{r fig.height = 6}
-par(mfrow=c(3,3))
-hist(df_appendix_b$age,main = "age")
-hist(df_appendix_b$game,main = "game")
-hist(df_appendix_b$game_starting,main = "game_starting")
-hist(df_appendix_b$minute,main = "minute")
-hist(df_appendix_b$field_goal,main = "field_goal")
-hist(df_appendix_b$fg_attempt,main = "fg_attempt")
-hist(df_appendix_b$x3p,main = "x3p")
-hist(df_appendix_b$x3p_attempt,main = "x3p_attempt")
-hist(df_appendix_b$x2p,main = "x2p")
-#mtext("Distribution of numeric Variables",side = 3)
-```
-
-```{r fig.height = 6}
-par(mfrow=c(3,3))
-hist(df_appendix_b$age,main = "age")
-hist(df_appendix_b$game,main = "game")
-hist(df_appendix_b$game_starting,main = "game_starting")
-hist(df_appendix_b$minute,main = "minute")
-hist(df_appendix_b$field_goal,main = "field_goal")
-hist(df_appendix_b$fg_attempt,main = "fg_attempt")
-hist(df_appendix_b$x3p,main = "x3p")
-hist(df_appendix_b$x3p_attempt,main = "x3p_attempt")
-hist(df_appendix_b$x2p,main = "x2p")
-#mtext("Distribution of numeric Variables",side = 3)
-```
-
+Distributions of other numeric variables. 
 
 ```{r dpi=300}
 plot_data_column = function (data, column) {
@@ -174,20 +120,6 @@ annotate_figure(figure_c,
 ```
 
 
-```{r fig.height = 2}
-par(mfrow=c(1,3))
-hist(df_appendix_b$turnover,main = "turnover")
-hist(df_appendix_b$personal_foul,main = "personal foul")
-hist(df_appendix_b$point,main = "point")
-```
-
-
-```{r}
-hist(df_appendix_b$salary,main = "salary")
-```
-
-\newpage
-
 ### Correlation Analysis
 
 ```{r}
@@ -199,8 +131,6 @@ corrplot(cor(df_corr_1),type = "lower")
 
 ```
 
-
-\newpage
 
 ### Analyzing trends in data
 
