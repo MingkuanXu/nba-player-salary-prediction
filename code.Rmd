@@ -1,0 +1,78 @@
+---
+title: "code"
+author: "DS2"
+date: "5/6/2022"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(caret)
+library(patchwork)
+library(mgcv)
+library(earth)
+library(corrplot)
+library(vip)
+
+```
+
+
+## Introduction
+
+NBA players are considered to be among the highest-paid athletes in the world. Despite even the minimum wage in the NBA is way higher than that of any professional league in North America, there's a large gap between NBA stars and ordinary players[1]. In this project, we are interested in finding the factors that influence salary of NBA players. We will also develop a model to predict the salary.
+
+We will conduct data analysis and model construction based on two datasets on NBA players' contracted salary [2] and performance statistics per game [3] in 2021-2022. The following steps are included in our data preperation:
+
+ - Two original datasets are inner joined by players and teams
+ - Keep only one record with most number of games played for each of players, given a player may transfer to other teams during the session and have multiple records.
+ - Remove 5 variables with missing values caused by division of other existing variables. 
+ - Remove variable representing the player name. 
+
+The final cleaned dataset has 442 records and 24 variables. 
+
+```{r joining datasets}
+df_salary = read_csv("NBA_season2122_player_salary.csv") %>%
+  janitor::clean_names() %>%
+  select(Player=x2,Team=x3,Salary=salary_4) %>%
+  na.omit()
+
+df_salary = df_salary[-1,]
+
+df_stats = read_csv("NBA_season2122_player_stats.csv") %>%
+  rename(Team=Tm) %>%
+  select(-Rk)
+
+df_players = inner_join(x=df_salary,y=df_stats,by=c("Player","Team")) %>% 
+  janitor::clean_names() %>% 
+  distinct()
+
+df_players = df_players %>% 
+  arrange(player,desc(g)) %>% 
+  distinct(player,.keep_all = TRUE)
+
+# Removed variables with missing data and resulted from division of other variables
+df_players = df_players %>% 
+  select(-x3p_percent, -ft_percent, -fg_percent,-x2p_percent,-e_fg_percent,-player)
+
+#The final generated dataset for use: df_player.
+```
+
+
+```{r data cleaning}
+# Convert salary from characters to numbers.
+# Convert categorical variables to factors
+
+df_players = df_players %>% 
+  separate(salary,into = c("symbol", "salary"),1) %>% 
+  select(-symbol)%>% 
+  mutate(salary = as.numeric(salary)/1000000,
+         team = factor(team),
+         pos = factor(pos))%>% 
+  relocate(salary, .after = last_col())
+
+```
