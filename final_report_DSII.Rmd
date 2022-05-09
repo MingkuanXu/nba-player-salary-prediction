@@ -34,54 +34,55 @@ We will conduct data analysis and model construction based on two datasets on NB
  - Two original datasets are inner joined by players and teams
  - Keep only one record with most number of games played for each of players, given a player may transfer to other teams during the session and have multiple records.
  - Remove 5 variables with missing values caused by division of other existing variables. 
+ - Convert count variables (`field_goal`, `free_throw`, etc.) to rates by dividing variable `minute`
 
-The final cleaned dataset has 442 records and 24 columns as followed:
+The final cleaned dataset has 442 records and 24 variables, including 2 categorical variables, 21 numerical variables and 1 numeric response variable `salary`.
 
-- `position` -- A categorical variable of the player's position (C, PF, SF, SG, PG)
+- `position` -- Position of the player (5 categories)
 
 - `age` -- Player's age on February 1 of the season
 
-- `team` -- A categorical variable of the player's playig team
+- `team` -- Team that the player belong to. (30 categories)
 
-- `game` -- Number of games played
+- `game` -- Number of games played per minute
 
-- `game_starting` -- Number of games played as a starter
+- `game_starting` -- Number of games played as a starter per minute
 
 - `minute` -- Minutes played per game
 
-- `field_goal` -- Field goals per game
+- `field_goal` -- Field goals per minute
 
-- `fg_attempt` -- Field goal attempts per game
+- `fg_attempt` -- Field goal attempts per minute
 
-- `x3p` -- 3-point field goals per game
+- `x3p` -- 3-point field goals per minute
 
-- `x3p_attempt` -- 3-point field goal attempts per game
+- `x3p_attempt` -- 3-point field goal attempts per minute
 
-- `x2p` -- 2-point field goals per game
+- `x2p` -- 2-point field goals per minute
 
-- `x2p_attempt` -- 2-point field goal attempts per game
+- `x2p_attempt` -- 2-point field goal attempts per minute
 
-- `free_throw` -- Free throws per game
+- `free_throw` -- Free throws per minute
 
-- `ft_attempt` -- Free throw attempts per game
+- `ft_attempt` -- Free throw attempts per minute
 
-- `offensive_rb` -- Offensive rebounds per game
+- `offensive_rb` -- Offensive rebounds per minute
 
-- `defenssive_rb` -- Defensive rebounds per game
+- `defenssive_rb` -- Defensive rebounds per minute
 
-- `total_rb` -- Total rebounds per game
+- `total_rb` -- Total rebounds per minute
 
-- `assistance` -- Assists per game
+- `assistance` -- Assists per minute
 
-- `steal` -- Steals per game
+- `steal` -- Steals per minute
 
-- `block` -- Blocks per game
+- `block` -- Blocks per minute
 
-- `turnover` -- Turnovers per game
+- `turnover` -- Turnovers per minute
 
-- `personal_foul` -- Personal fouls per game
+- `personal_foul` -- Personal fouls per minute
 
-- `point` -- Points per game
+- `point` -- Points per minute
 
 - `salary` -- Salary of the player in million
 
@@ -136,10 +137,9 @@ df_players = df_players %>%
 
 ```
 
-
-Since `minute` stands for minutes played per game, we will divided variables stands for counts by `minute` to get a rate. These variables includes `field_goal`, `fg_attempt`    `x3p`, `x3p_attempt`, `x2p`, `x2p_attempt`,   `free_throw`,  `ft_attempt`, `offensive_rb`  `defenssive_rb`, `total_rb`, `assistance`,`steal`, `block`, `turnover`, `personal_foul` and `point`.
-
 ```{r}
+## Since `minute` stands for minutes played per game, we will divided variables stands for counts by `minute` to get a rate. These variables includes `field_goal`, `fg_attempt`    `x3p`, `x3p_attempt`, `x2p`, `x2p_attempt`,   `free_throw`,  `ft_attempt`, `offensive_rb`  `defenssive_rb`, `total_rb`, `assistance`,`steal`, `block`, `turnover`, `personal_foul` and `point`.
+
 df_players = df_players %>% 
   mutate(field_goal = field_goal/minute,
          fg_attempt = fg_attempt/minute,
@@ -282,6 +282,7 @@ ctrl1 <- trainControl(method = "cv", number = 10)
 * What were your findings? Are they what you expect? What insights into the data can you make?
 
 
+\newpage
 
 ## References
 
@@ -291,5 +292,8 @@ ctrl1 <- trainControl(method = "cv", number = 10)
 
 
 
+\newpage
 
+## Appendices
 
+### Appendix A

@@ -29,7 +29,7 @@ We will conduct data analysis and model construction based on two datasets on NB
  - Remove 5 variables with missing values caused by division of other existing variables. 
  - Remove variable representing the player name. 
 
-The final cleaned dataset has 442 records and 24 variables. 
+The final cleaned dataset has 442 records and 24 variables, including 2 categorical variables, 21 numerical variables and 1 numeric response variable `salary`.
 
 ```{r joining datasets}
 df_salary = read_csv("NBA_season2122_player_salary.csv") %>%
