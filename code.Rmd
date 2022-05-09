@@ -64,6 +64,11 @@ df_players = df_players %>%
 
 colnames(df_players) = c("player", "team", "position", "age", "game","game_starting" ,"minute","field_goal", "fg_attempt", "x3p", "x3p_attempt" ,"x2p", "x2p_attempt",   "free_throw",   "ft_attempt", "offensive_rb", "defenssive_rb",  "total_rb" ,   "assistance" ,   "steal" , "block",    "turnover",  "personal_foul", "point", "salary")
 
+df_players = df_players %>% 
+  distinct(player,.keep_all = TRUE) %>%
+  mutate(player = gsub("\\\\.*","",player)) %>%
+  `row.names<-`(., NULL) %>% 
+  column_to_rownames('player')
 ```
 
 ## Part 1 - Exploratory Analysis 

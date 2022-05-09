@@ -214,7 +214,7 @@ ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
 
 ```{r least squared, echo=FALSE,message=FALSE,warning=FALSE}
 set.seed(8106)
-lm.fit <- train(x, y, method = "lm", trControl = ctrl1)
+lm.fit <- train(x, y, method = "lm", trControl = ctrl1, preProcess = "scale")
 
 # summary(lm.fit)
 lm.pred <- predict(lm.fit, newdata = df_test_2)
@@ -224,16 +224,14 @@ lm.mse = mean((lm.pred - df_test$salary)^2)
 
 ### (b) Elastic Net (including lasso/ridge)
 
-
 ```{r elastic net, echo = FALSE, message = FALSE, warning = FALSE}
 set.seed(8106)
-elnet.fit <- train(
-  x,y,method = "glmnet",
-  tuneGrid = expand.grid(alpha = seq(0, 1, length = 11),
-                         lambda = exp(seq(3, -3, length=100))),
-  trControl = ctrl1)
+elnet.fit <- train(x, y, method = "glmnet",
+                   tuneGrid = expand.grid(alpha = seq(0, 1, length = 11),
+                   lambda = exp(seq(3, -3, length = 100))),
+                   trControl = ctrl1)
 
-myCol<- rainbow(25)
+myCol <- rainbow(25)
 myPar <- list(superpose.symbol = list(col = myCol),
               superpose.line = list(col = myCol)) 
 
@@ -277,9 +275,6 @@ gam.mse = mean((gam.pred - df_test$salary)^2)
 set.seed(8106)
 mars_grid <- expand.grid(degree = 1:3, 
                          nprune = 2:8)
-
-
-
 
 mars.fit <- train(x, y,
                   method = "earth",
