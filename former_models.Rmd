@@ -61,13 +61,19 @@ df_players = df_players %>%
 
 df_players = df_players %>% 
   separate(salary,into = c("symbol", "salary"),1) %>% 
-  select(-symbol)%>% 
+  select(-symbol) %>% 
   mutate(salary = as.numeric(salary)/1000000,
          team = factor(team),
          pos = factor(pos)) %>% 
   relocate(salary, .after = last_col())
 
 colnames(df_players) = c("player", "team", "position", "age", "game","game_starting" ,"minute","field_goal", "fg_attempt", "x3p", "x3p_attempt" ,"x2p", "x2p_attempt",   "free_throw",   "ft_attempt", "offensive_rb", "defenssive_rb",  "total_rb" ,   "assistance" ,   "steal" , "block",    "turnover",  "personal_foul", "point", "salary")
+
+df_players = df_players %>% 
+  distinct(player,.keep_all = TRUE) %>%
+  mutate(player = gsub("\\\\.*","",player)) %>%
+  `row.names<-`(., NULL) %>% 
+  column_to_rownames('player')
 
 ```
 
@@ -94,6 +100,7 @@ df_players = df_players %>%
          turnover = turnover/minute,
          personal_foul = personal_foul/minute,
          point = point/minute) 
+
 ```
 
 
@@ -150,7 +157,7 @@ annotate_figure(figure_c,
 ```{r echo=FALSE,message=FALSE,warning=FALSE}
 
 df_corr_1 = df_players %>% 
-  select(-player, -team,-position)
+  select(-team,-position)
 
 corrplot(cor(df_corr_1),type = "lower")
 
@@ -194,14 +201,13 @@ df_players %>%
 
 # Models
 
-
 ```{r data partition, echo=FALSE,message=FALSE,warning=FALSE}
 set.seed(8106)
 index_train <- createDataPartition(y = df_players$salary, p = 0.8, list = FALSE) 
 df_train <- df_players[index_train, ]
 df_test <- df_players[-index_train, ]
 df_train_2 = model.matrix(salary ~ ., df_train)[ ,-1]
-df_test_2 = model.matrix(salary ~ .,df_test)[ ,-1]
+df_test_2 = model.matrix(salary ~ ., df_test)[ ,-1]
 x = df_train_2
 y = df_train %>% pull(salary)
 
@@ -214,9 +220,8 @@ ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
 
 ```{r least squared, echo=FALSE,message=FALSE,warning=FALSE}
 set.seed(8106)
-lm.fit <- train(x, y, method = "lm", trControl = ctrl1, preProcess = "scale")
-
-# summary(lm.fit)
+lm.fit <- train(x, y, method = "lm", trControl = ctrl1)
+#summary(lm.fit)
 lm.pred <- predict(lm.fit, newdata = df_test_2)
 lm.mse = mean((lm.pred - df_test$salary)^2)
 # lm.mse
@@ -248,21 +253,21 @@ set.seed(8106)
 pcr.fit <- train(x, y, method = "pcr", tuneLength = 20, trControl = ctrl1)
 pcr.pred = predict(pcr.fit, newdata = df_test_2)
 pcr.mse = mean((pcr.pred - df_test$salary)^2)
-ggplot(pcr.fit)
+ggplot(pcr.fit, highlight = TRUE)
 ```
 
 ## Part 2 Generalized Linear Regression
 
 ### (a) GAM
-```{r GAM, echo = FALSE, message = FALSE, warning = FALSE}
+
+```{r GAM, echo=FALSE,message=FALSE,warning=FALSE}
 set.seed(8106)
-#gam.fit <- train(x, y,
-                 #method = "gam",
-                 #tuneGrid = data.frame(method = "GCV.Cp", select = c(TRUE,FALSE)),
-                 #trControl = ctrl1)
+
 gam.fit <- gam(salary~
-                 s(age)+s(g)+s(gs)+s(ft)+s(fta)+s(drb)+s(ast)+s(blk)+s(pf)+s(pts),
-              data = df_train)
+               s(age)+s(game)+s(game_starting)+s(free_throw)+s(ft_attempt)+s(defenssive_rb)
+               +s(assistance)+s(block)+s(personal_foul)+s(point),
+               data = df_train)
+summary(gam.fit)
 gam.pred = predict(gam.fit, newdata = df_test)
 gam.mse = mean((gam.pred - df_test$salary)^2)
 #gam.mse
@@ -291,4 +296,28 @@ mars.mse = mean((df_test$salary - mars.pred)^2)
 ```
 
 
+```{r summary, echo=FALSE,message=FALSE,warning=FALSE}
+resamp <- resamples(list(LeastSquare = lm.fit,ElasticNet=elnet.fit,PCR = pcr.fit, MARS = mars.fit))
+
+summary(resamp)$statistics$RMSE %>% knitr::kable(caption = "Table 1: RMSE of Different Models",digits=2)
+
+bwplot(resamp, metric = "RMSE")
+```
+
+```{r test RMSE, echo=FALSE,message=FALSE,warning=FALSE}
+test_RMSE <- data.frame (
+  Methods = c("Linear","ElasticNet","PCR","GAM","MARS"),
+  Test_MSE = c(lm.mse,elnet.mse,pcr.mse,gam.mse,mars.mse)
+) %>%
+  mutate(RMSE=round(sqrt(Test_MSE),digit=2)) %>%
+  select(-Test_MSE) %>%
+  t() %>%
+  as.data.frame()
+
+colnames(test_RMSE) <- test_RMSE[1,]
+test_RMSE <- test_RMSE[-1, ] 
+
+
+test_RMSE %>% knitr::kable(caption = "Table 2: RMSE of Different Models on Test Set")
+```
 
