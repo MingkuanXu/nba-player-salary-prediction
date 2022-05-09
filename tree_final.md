@@ -64,19 +64,19 @@ We add class labels for the newly generated clusters of `team` as
 ### Random forest
 
     ##     mtry splitrule min.node.size
-    ## 129   26  variance             3
+    ## 128   26  variance             2
 
 ![](tree_final_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ### gbm
 
     ##    n.trees interaction.depth shrinkage n.minobsinnode
-    ## 14    4000                 4     0.001              1
+    ## 47    2000                 6     0.002              1
 
 ![](tree_final_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
     ## A gradient boosted model with gaussian loss function.
-    ## 4000 iterations were performed.
+    ## 2000 iterations were performed.
     ## There were 27 predictors of which 27 had non-zero influence.
 
 ### Comparison of Tree-based models
@@ -84,8 +84,8 @@ We add class labels for the newly generated clusters of `team` as
 ![](tree_final_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
     ##              model  cv_rmse
-    ## 1  rf_cluster_team 5.010028
-    ## 2 gbm_cluster_team 5.023088
+    ## 1  rf_cluster_team 5.137371
+    ## 2 gbm_cluster_team 5.102139
 
 ### Best tree model
 
@@ -97,7 +97,7 @@ Random forest with tuning parameters:
 
 Test error:
 
-    ## [1] 5.62092
+    ## [1] 5.559568
 
 Variable Importance:
 
@@ -109,10 +109,10 @@ Prediction on new observations:
 
 True salary (in million) for new observations:
 
-    ##                             salary
-    ## Aaron Gordon\\gordoaa01  16.409091
-    ## Aaron Wiggins\\wiggiaa01  1.000000
-    ## Al Horford\\horfoal01    27.000000
-    ## Alize Johnson\\johnsal02  0.804978
-    ## Anthony Davis\\davisan02 35.361360
-    ## Anthony Gill\\gillan01    1.517981
+    ##                  salary
+    ## Aaron Gordon  16.409091
+    ## Aaron Wiggins  1.000000
+    ## Al Horford    27.000000
+    ## Alize Johnson  0.804978
+    ## Anthony Davis 35.361360
+    ## Anthony Gill   1.517981
