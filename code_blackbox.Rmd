@@ -105,9 +105,15 @@ df_train_scaled = as.data.frame(scale(
   df_train %>% dplyr::select(-team,-position,-player), 
   center = TRUE, scale = TRUE))
 
+df_train_scaled = as.data.frame(
+  df_train %>% dplyr::select(-team,-position,-player))
+
 df_test_scaled = as.data.frame(scale(
   df_test %>% dplyr::select(-team,-position,-player), 
   center = TRUE, scale = TRUE))
+
+df_test_scaled = as.data.frame(
+  df_test %>% dplyr::select(-team,-position,-player))
 ```
 
 ```{r}
@@ -184,10 +190,10 @@ lr.test.MSE = mean((pr.test.lr - df_test_scaled$salary)^2)
 ### Blackbox using keras
 
 ```{r}
-p <- ncol(df_train_scaled)
+p <- ncol(df_train_scaled) - 1
 model_1 <- keras_model_sequential()
 model_1 %>% 
-  layer_dense(units = 10, activation ="relu", input_shape = p) %>%
+  layer_dense(units = 10, activation ="relu", input_shape = 21) %>%
   layer_dense(units = 5, activation = "relu") %>%
   layer_dense(units = 1, activation = "linear") 
 
@@ -221,24 +227,26 @@ model_3 %>%
 
 summary(model_3)
 
-model_3 %>% compile(loss = "categorical_crossentropy",
+model_3 %>% compile(loss = "mse",
                    optimizer = optimizer_rmsprop(),
-                   metrics = "accuracy")
+                   metrics = "mse")
 ```
 
 
 ```{r}
 set.seed(8106)
 
-df_train_scaled_x = df_train_scaled[1:21]
+#df_train_scaled_x = array(df_train_scaled %>% dplyr::select(-salary))
+df_train_scaled_x = scale(model.matrix(salary~., df_train_scaled)[,-1],center = TRUE, scale = TRUE)
+
 df_train_scaled_y = df_train_scaled$salary
 
-df_test_scaled_x = df_test_scaled[1:21]
+df_test_scaled_x = scale(model.matrix(salary~., df_test_scaled)[,-1],center = TRUE, scale = TRUE)
 df_test_scaled_y = df_test_scaled$salary
 
-learn <- model3 %>% fit(df_train_scaled_x, df_train_scaled_y,
-                        epochs = 30,
-                        batch_size = 128,
+learn <- model_3 %>% fit(df_train_scaled_x, df_train_scaled_y, 
+                        epochs = 200,
+                        batch_size = 32,
                         validation_split = 0.2,
                         verbose = 2)
 # loss and acuracy metric for each epoch
@@ -248,6 +256,6 @@ plot(learn)
 
 ```{r}
 score <- 
-  model3 %>% evaluate(df_test_scaled_x, df_test_scaled_y)
+  model_3 %>% evaluate(df_test_scaled_x, df_test_scaled_y)
 score
 ```
