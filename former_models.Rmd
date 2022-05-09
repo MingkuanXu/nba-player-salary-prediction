@@ -27,7 +27,9 @@ How did you prepare and clean the data?
 
 ## Data Preprocessing
 
-```{r joining datasets, echo=FALSE,message=FALSE,warning=FALSE}
+## Part 0 - Data Preprocessing
+
+```{r joining datasets}
 df_salary = read_csv("NBA_season2122_player_salary.csv") %>%
   janitor::clean_names() %>%
   select(Player=x2,Team=x3,Salary=salary_4) %>%
@@ -55,13 +57,13 @@ df_players = df_players %>%
 ```
 
 
-```{r data cleaning, echo=FALSE,message=FALSE,warning=FALSE}
+```{r data cleaning}
 # Convert salary from characters to numbers.
 # Convert categorical variables to factors
 
 df_players = df_players %>% 
   separate(salary,into = c("symbol", "salary"),1) %>% 
-  select(-symbol) %>% 
+  select(-symbol)%>% 
   mutate(salary = as.numeric(salary)/1000000,
          team = factor(team),
          pos = factor(pos)) %>% 
@@ -74,14 +76,13 @@ df_players = df_players %>%
   mutate(player = gsub("\\\\.*","",player)) %>%
   `row.names<-`(., NULL) %>% 
   column_to_rownames('player')
-
 ```
 
-# Exploratory analysis/visualization
+## Part 1 - Exploratory Analysis 
 
 Since `minute` stands for minutes played per game, we will divided variables stands for counts by `minute` to get a rate. These variables includes `field_goal`, `fg_attempt`    `x3p`, `x3p_attempt`, `x2p`, `x2p_attempt`,   `free_throw`,  `ft_attempt`, `offensive_rb`  `defenssive_rb`, `total_rb`, `assistance`,`steal`, `block`, `turnover`, `personal_foul` and `point`.
 
-```{r, echo=FALSE,message=FALSE,warning=FALSE}
+```{r}
 df_players = df_players %>% 
   mutate(field_goal = field_goal/minute,
          fg_attempt = fg_attempt/minute,
@@ -100,16 +101,15 @@ df_players = df_players %>%
          turnover = turnover/minute,
          personal_foul = personal_foul/minute,
          point = point/minute) 
-
 ```
 
 
 
-## Univariate Analysis
+### Univariate Analysis
 
 Distributions of the two categorical variables, `team` and `position`.
 
-```{r,echo=FALSE,message=FALSE,warning=FALSE}
+```{r}
 par(mfrow=c(1,2))
 plot_team = ggplot(df_players) + geom_bar(aes(team)) + 
   scale_x_discrete(guide = guide_axis(check.overlap = TRUE))+ theme_bw()
@@ -120,7 +120,7 @@ plot_position
 
 Distributions of other numeric variables. 
 
-```{r dpi=300, echo=FALSE,message=FALSE,warning=FALSE}
+```{r dpi=300}
 plot_data_column = function (data, column) {
     ggplot(data, aes_string(x = column)) +
         geom_histogram(bins=15) +
@@ -152,9 +152,9 @@ annotate_figure(figure_c,
 ```
 
 
-## Correlation Analysis
+### Correlation Analysis
 
-```{r echo=FALSE,message=FALSE,warning=FALSE}
+```{r}
 
 df_corr_1 = df_players %>% 
   select(-team,-position)
@@ -164,11 +164,11 @@ corrplot(cor(df_corr_1),type = "lower")
 ```
 
 
-## Analyzing trends in data
+### Analyzing trends in data
 
 From numeric variables, we found that `stl`,`x3p`, `age`,`gs` seem to have some non-linear trends.
 
-```{r, fig.height=4, echo=FALSE,message=FALSE,warning=FALSE}
+```{r, fig.height=4}
 theme1 <- trellis.par.get()
 theme1$plot.symbol$col <- rgb(0, 0, 0, 1) 
 theme1$plot.symbol$pch <- 16
@@ -177,19 +177,28 @@ theme1$plot.line$lwd <- 2
 theme1$strip.background$col <- rgb(.0, .2, .6, .2) 
 trellis.par.set(theme1)
 
-df_features = df_players[4:24]
+df_features = df_players[4:13]
 featurePlot(x = df_features, 
             y = df_players$salary,
             plot = "scatter",
             # span = .5,
             labels = c("Predictors","Player Salary (Millions)"), 
             type = c("p", "smooth"), 
-            layout = c(7, 3))
+            layout = c(5, 2))
+
+df_features = df_players[14:23]
+featurePlot(x = df_features, 
+            y = df_players$salary,
+            plot = "scatter",
+            # span = .5,
+            labels = c("Predictors","Player Salary (Millions)"), 
+            type = c("p", "smooth"), 
+            layout = c(5, 2))
 ```
 
 From categorical variable `position`, extremely high values in salary show in all positions and some teams.
 
-```{r fig.height=4, echo=FALSE,message=FALSE,warning=FALSE}
+```{r fig.height=4}
 df_players %>% 
   mutate(
     pos = fct_reorder(position,salary)
@@ -201,11 +210,13 @@ df_players %>%
 
 # Models
 
-```{r data partition, echo=FALSE,message=FALSE,warning=FALSE}
+```{r}
+# Data partition
 set.seed(8106)
-index_train <- createDataPartition(y = df_players$salary, p = 0.8, list = FALSE) 
-df_train <- df_players[index_train, ]
-df_test <- df_players[-index_train, ]
+
+indexTrain <- createDataPartition(y = df_players$salary, p = 0.75, list = FALSE, times = 1)
+df_train <- df_players[indexTrain, ]
+df_test <- df_players[-indexTrain, ]
 df_train_2 = model.matrix(salary ~ ., df_train)[ ,-1]
 df_test_2 = model.matrix(salary ~ ., df_test)[ ,-1]
 x = df_train_2
@@ -278,7 +289,7 @@ gam.mse = mean((gam.pred - df_test$salary)^2)
 
 ```{r MARS, echo = FALSE, message = FALSE, warning = FALSE}
 set.seed(8106)
-mars_grid <- expand.grid(degree = 1:3, 
+mars_grid <- expand.grid(degree = 1:4, 
                          nprune = 2:8)
 
 mars.fit <- train(x, y,
@@ -286,20 +297,20 @@ mars.fit <- train(x, y,
                   tuneGrid = mars_grid,
                   trControl = ctrl1)
 
-# mars.fit$bestTune
+mars.fit$bestTune
 
-ggplot(mars.fit)+theme_bw()
+ggplot(mars.fit) + theme_bw()
 
 mars.pred = predict(mars.fit, newdata = df_test_2)
 mars.mse = mean((df_test$salary - mars.pred)^2)
-#mars.mse
+mars.mse
 ```
 
 
 ```{r summary, echo=FALSE,message=FALSE,warning=FALSE}
-resamp <- resamples(list(LeastSquare = lm.fit,ElasticNet=elnet.fit,PCR = pcr.fit, MARS = mars.fit))
+resamp <- resamples(list(LeastSquare = lm.fit,ElasticNet = elnet.fit,PCR = pcr.fit, MARS = mars.fit))
 
-summary(resamp)$statistics$RMSE %>% knitr::kable(caption = "Table 1: RMSE of Different Models",digits=2)
+summary(resamp)$statistics$RMSE %>% knitr::kable(caption = "RMSE of Different Models",digits = 2)
 
 bwplot(resamp, metric = "RMSE")
 ```
@@ -318,6 +329,6 @@ colnames(test_RMSE) <- test_RMSE[1,]
 test_RMSE <- test_RMSE[-1, ] 
 
 
-test_RMSE %>% knitr::kable(caption = "Table 2: RMSE of Different Models on Test Set")
+test_RMSE %>% knitr::kable(caption = "RMSE of Different Models on Test Set")
 ```
 
