@@ -260,20 +260,21 @@ model_3 %>%
 summary(model_3)
 
 model_3 %>% compile(loss = "mse",
-                   optimizer = optimizer_rmsprop(),
-                   metrics = "mse")
+                   optimizer = optimizer_rmsprop())
+#                   metrics = "mse")
 ```
 
 
 ```{r}
 set.seed(8106)
 
-
-df_train_scaled_x = scale(model.matrix(salary~., df_train)[,-1],center = TRUE, scale = TRUE)
+df_train_noc = as.data.frame(df_train %>% dplyr::select(-team,-player,-position))
+df_train_scaled_x = scale(model.matrix(salary~., df_train_noc)[,-1],center = TRUE, scale = TRUE)
 
 df_train_scaled_y = df_train$salary
 
-df_test_scaled_x = scale(model.matrix(salary~., df_test)[,-1],center = TRUE, scale = TRUE)
+df_test_noc = as.data.frame(df_test %>% dplyr::select(-team,-player,-position))
+df_test_scaled_x = scale(model.matrix(salary~., df_test_noc)[,-1],center = TRUE, scale = TRUE)
 df_test_scaled_y = df_test$salary
 
 learn <- model_3 %>% fit(df_train_scaled_x, df_train_scaled_y, 
