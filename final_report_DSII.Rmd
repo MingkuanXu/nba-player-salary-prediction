@@ -160,22 +160,24 @@ df_players = df_players %>%
          point = point/minute) 
 ```
 
+
 ## Exploratory Analysis 
 
 ### Univariate Analysis
 
-Distributions of the two categorical variables, `team` and `position`.
+The following plots show distribution of each univariable. For categorical variables `team` and `position`, they are dsitributed quite evenly. There are 30 unique values in `team`, which may result in too many dummy variables in the model. Therefore, we may consider exclude `team` or cluster it into fewer classes in selected models. 
 
-```{r}
+```{r fig.height = 4}
 par(mfrow=c(1,2))
-plot_team = ggplot(df_players) + geom_bar(aes(team)) + 
-  scale_x_discrete(guide = guide_axis(check.overlap = TRUE))+ theme_bw()
-plot_team
+plot_team = ggplot(df_players,mapping = aes(x = team)) + geom_bar(aes(team)) + 
+ theme_bw()+
+  theme(axis.text.x=element_blank())
+
 plot_position = ggplot(df_players) + geom_bar(aes(position)) + theme_bw()
-plot_position
+plot_team+plot_position
 ```
 
-Distributions of other numeric variables. 
+For numeric variables, some of them (`gs`, `ft`, `orb`,`blk`), including response `salary` are skewed, with some players have extremely high salary. Visualization for all variables are enclosed in Appendix A.
 
 ```{r dpi=300}
 plot_data_column = function (data, column) {
@@ -191,7 +193,7 @@ figure_a = ggarrange(plotlist = histograms[1:9],
           ncol = 3, nrow = 3)
 
 annotate_figure(figure_a, 
-                top = text_grob("Histograms of Predictive Variables (Group A)", 
+                top = text_grob("Histograms of Selected Variables (Group A)", 
                                 face = "bold", size = 15))
 
 
@@ -209,7 +211,10 @@ annotate_figure(figure_c,
 ```
 
 
+
 ### Correlation Analysis
+
+From the correlation heat map, it is obvious that multicolinearity could be a problem, which we may consider using penalized models (ridge, lasso) or ensembled models (random forest, boosting, neural network) to fix.
 
 ```{r}
 
@@ -223,7 +228,7 @@ corrplot(cor(df_corr_1),type = "lower")
 
 ### Analyzing trends in data
 
-From numeric variables, we found that `stl`,`x3p`, `age`,`gs` seem to have some non-linear trends.
+The feature maps demonstrated that some correlations are non-linear, which we may consider using GAM or MARS to address.
 
 ```{r, fig.height=4}
 theme1 <- trellis.par.get()
@@ -244,15 +249,31 @@ featurePlot(x = df_features,
             layout = c(7, 3))
 ```
 
-From categorical variable `position`, extremely high values in salary show in all positions and some teams.
+From categorical variable `position` and `team`, extremely high values and large variance in salary show in all positions and some teams.
 
 ```{r fig.height=4}
-df_players %>% 
+
+box1 = df_players %>% 
   mutate(
     pos = fct_reorder(position,salary)
   ) %>% 
   ggplot(aes(x = position, y = salary, group = pos, fill = pos))+
-  geom_boxplot() + theme_bw()
+  geom_boxplot() + 
+  theme_bw() +
+  theme(legend.position="none")
+
+
+box2 = df_players %>% 
+  mutate(
+    team = fct_reorder(team,salary)
+  ) %>% 
+  ggplot(aes(x = team, y = salary, group = team, fill = team))+
+  geom_boxplot() + 
+  theme_bw()+
+  theme(legend.position="none",
+        axis.text.x=element_blank())
+
+box1 + box2
 
 ```
 
@@ -296,4 +317,36 @@ ctrl1 <- trainControl(method = "cv", number = 10)
 
 ## Appendices
 
-### Appendix A
+### Appendix A - Numeric Variable Distribution
+
+```{r dpi=300}
+plot_data_column = function (data, column) {
+    ggplot(data, aes_string(x = column)) +
+        geom_histogram(bins=15) +
+        xlab(column) + theme_bw(base_size = 10)
+}
+
+histograms <- lapply(colnames(df_players)[4:24], 
+                       plot_data_column, data = df_players)
+
+figure_a = ggarrange(plotlist = histograms[1:9], 
+          ncol = 3, nrow = 3)
+
+annotate_figure(figure_a, 
+                top = text_grob("Histograms of Predictive Variables (Group A)", 
+                                face = "bold", size = 15))
+
+
+figure_b = ggarrange(plotlist = histograms[10:18], 
+          ncol = 3, nrow = 3)
+annotate_figure(figure_b, 
+                top = text_grob("Histograms of Predictive Variables (Group B)", 
+                                face = "bold", size = 15))
+
+figure_c = ggarrange(plotlist = histograms[19:21],
+          ncol = 3, nrow = 3)
+annotate_figure(figure_c, 
+                top = text_grob("Histograms of Predictive Variables (Group C)", 
+                                face = "bold", size = 15))
+```
+
