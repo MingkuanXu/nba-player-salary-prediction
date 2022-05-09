@@ -1,0 +1,158 @@
+---
+title: "P8106 - Final Project"
+author: "Mingkuan Xu (mx2262)"
+date: "5/9/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+library(caret)
+library(neuralnet)
+library(MASS)
+```
+
+### Data Preprocessing
+
+```{r joining datasets}
+df_salary = read_csv("NBA_season2122_player_salary.csv") %>%
+  janitor::clean_names() %>%
+  select(Player=x2,Team=x3,Salary=salary_4) %>%
+  na.omit()
+
+df_salary = df_salary[-1,]
+
+df_stats = read_csv("NBA_season2122_player_stats.csv") %>%
+  rename(Team=Tm) %>%
+  select(-Rk)
+
+df_players = inner_join(x=df_salary,y=df_stats,by=c("Player","Team")) %>% 
+  janitor::clean_names() %>% 
+  distinct()
+
+df_players = df_players %>% 
+  arrange(player,desc(g)) %>% 
+  distinct(player,.keep_all = TRUE)
+
+# Removed variables with missing data and resulted from division of other variables
+df_players = df_players %>% 
+  select(-x3p_percent, -ft_percent, -fg_percent,-x2p_percent,-e_fg_percent)
+
+# The final generated dataset for use: df_player.
+```
+
+```{r data cleaning}
+# Convert salary from characters to numbers.
+# Convert categorical variables to factors
+
+df_players = df_players %>% 
+  separate(salary,into = c("symbol", "salary"),1) %>% 
+  select(-symbol)%>% 
+  mutate(salary = as.numeric(salary)/1000000,
+         team = factor(team),
+         pos = factor(pos)) %>% 
+  relocate(salary, .after = last_col())
+
+colnames(df_players) = c("player", "team", "position", "age", "game","game_starting" ,"minute","field_goal", "fg_attempt", "x3p", "x3p_attempt" ,"x2p", "x2p_attempt",   "free_throw",   "ft_attempt", "offensive_rb", "defenssive_rb",  "total_rb" ,   "assistance" ,   "steal" , "block",    "turnover",  "personal_foul", "point", "salary")
+
+```
+
+```{r}
+df_players = df_players %>% 
+  mutate(field_goal = field_goal/minute,
+         fg_attempt = fg_attempt/minute,
+         x3p = x3p/minute,
+         x3p_attempt = x3p_attempt/minute,
+         x2p = x2p/minute,
+         x2p_attempt = x2p_attempt/minute,
+         free_throw = free_throw/minute,
+         ft_attempt = ft_attempt/minute,
+         offensive_rb = offensive_rb/minute,
+         defenssive_rb = defenssive_rb/minute,
+         total_rb = total_rb/minute,
+         assistance = assistance/minute,
+         steal = steal/minute,
+         block = block/minute,
+         turnover = turnover/minute,
+         personal_foul = personal_foul/minute,
+         point = point/minute) 
+```
+
+```{r}
+# Data partition
+set.seed(8106)
+
+indexTrain <- createDataPartition(y = df_players$salary, p = 0.75, list = FALSE, times = 1)
+ctrl1 <- trainControl(method = "cv", number = 10, repeats = 5)
+
+
+df_train = df_players[indexTrain,]
+df_test = df_players[-indexTrain,]
+```
+
+
+### Blackbox
+
+```{r}
+# Scale the data
+df_train_scaled = as.data.frame(scale(
+  df_train %>% dplyr::select(-team,-position,-player), 
+  center = TRUE, scale = TRUE))
+
+df_test_scaled = as.data.frame(scale(
+  df_test %>% dplyr::select(-team,-position,-player), 
+  center = TRUE, scale = TRUE))
+```
+
+```{r}
+
+
+set.seed(8106)
+
+
+nn_with_m_n_layers = function(m,n){
+  
+# Build Neural Network
+nn <- neuralnet(salary ~ ., 
+                data = df_train_scaled, hidden = c(10, 5), 
+                linear.output = TRUE)
+plot(nn)
+
+summary(nn)
+
+
+pr.train.nn <- compute(nn, df_train_scaled)
+nn.train.MSE = mean((pr.train.nn$net.result - df_train_scaled$salary)^2)
+
+pr.test.nn <- compute(nn, df_test_scaled)
+nn.test.MSE = mean((pr.test.nn$net.result - df_test_scaled$salary)^2)
+
+train.MSE.matrix[m,n] = nn.train.MSE
+test.MSE.matrix[m,n] = nn.test.MSE
+}
+
+
+matrix.row = 5
+matrix.column = 3
+train.MSE.matrix = matrix(nrow = matrix.row, ncol = matrix.column)
+test.MSE.matrix = matrix(nrow = matrix.row, ncol = matrix.column)
+
+
+
+lr = lm(salary ~.,
+            data = df_train_scaled)
+
+pr.train.lr = predict(lr, df_train_scaled)
+lr.train.MSE = mean((pr.train.lr - df_train_scaled$salary)^2)
+
+pr.test.lr = predict(lr, df_test_scaled)
+lr.test.MSE = mean((pr.lr - df_test_scaled$salary)^2)
+```
+
+### https://www.geeksforgeeks.org/how-neural-networks-are-used-for-regression-in-r-programming/
+
