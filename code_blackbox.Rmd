@@ -105,15 +105,39 @@ df_train_scaled = as.data.frame(scale(
   df_train %>% dplyr::select(-team,-position,-player), 
   center = TRUE, scale = TRUE))
 
-df_train_scaled = as.data.frame(
-  df_train %>% dplyr::select(-team,-position,-player))
-
 df_test_scaled = as.data.frame(scale(
   df_test %>% dplyr::select(-team,-position,-player), 
   center = TRUE, scale = TRUE))
+```
 
-df_test_scaled = as.data.frame(
-  df_test %>% dplyr::select(-team,-position,-player))
+
+```{r include=FALSE}
+nn <- neuralnet(salary ~ ., 
+                data = df_train_scaled, hidden = c(5, 3), 
+                linear.output = TRUE)
+
+pr.train.nn <- compute(nn, df_train_scaled)
+
+pr.test.nn <- compute(nn, df_test_scaled)
+
+results_1 = 
+  data.frame(predict = pr.train.nn$net.result, 
+                       actual = df_train_scaled$salary) %>%
+  mutate(type = "train")
+
+results_2 = 
+  data.frame(predict = pr.test.nn$net.result, 
+                       actual = df_test_scaled$salary) %>%
+  mutate(type = "test")
+
+results = rbind(results_1,results_2)
+  
+
+ggplot(results) + geom_point(aes(x=predict,y=actual,color=type,group=type)) +
+  labs(title = 'Predictions and Actual Values on Training and Testing Sets') +
+  geom_abline(slope = 1, intercept = 0) +
+  theme_bw()
+
 ```
 
 ```{r}
@@ -144,15 +168,23 @@ nn.test.MSE
 train.MSE.matrix[m,n] = nn.train.MSE
 test.MSE.matrix[m,n] = nn.test.MSE
 
+results_1 = 
+  data.frame(predict = pr.train.nn$net.result, 
+                       actual = df_train_scaled$salary) %>%
+  mutate(type = "train")
 
-plot(df_train_scaled$salary, pr.train.nn$net.result, col = "red", 
-     main = 'Real vs Predicted')
-abline(0, 1, lwd = 2)
+results_2 = 
+  data.frame(predict = pr.test.nn$net.result, 
+                       actual = df_test_scaled$salary) %>%
+  mutate(type = "test")
 
-plot(df_test_scaled$salary, pr.test.nn$net.result, col = "red", 
-     main = 'Real vs Predicted')
-abline(0, 1, lwd = 2)
+results = rbind(results_1,results_2)
+  
 
+ggplot(results) + geom_point(aes(x=predict,y=actual,color=type,group=type)) +
+  labs(title = 'Predictions and Actual Values on Training and Testing Sets') +
+  geom_abline(slope = 1, intercept = 0) +
+  theme_bw()
 }
 
 
@@ -236,13 +268,13 @@ model_3 %>% compile(loss = "mse",
 ```{r}
 set.seed(8106)
 
-#df_train_scaled_x = array(df_train_scaled %>% dplyr::select(-salary))
-df_train_scaled_x = scale(model.matrix(salary~., df_train_scaled)[,-1],center = TRUE, scale = TRUE)
 
-df_train_scaled_y = df_train_scaled$salary
+df_train_scaled_x = scale(model.matrix(salary~., df_train)[,-1],center = TRUE, scale = TRUE)
 
-df_test_scaled_x = scale(model.matrix(salary~., df_test_scaled)[,-1],center = TRUE, scale = TRUE)
-df_test_scaled_y = df_test_scaled$salary
+df_train_scaled_y = df_train$salary
+
+df_test_scaled_x = scale(model.matrix(salary~., df_test)[,-1],center = TRUE, scale = TRUE)
+df_test_scaled_y = df_test$salary
 
 learn <- model_3 %>% fit(df_train_scaled_x, df_train_scaled_y, 
                         epochs = 200,
