@@ -22,14 +22,14 @@ library(MASS)
 ```{r joining datasets}
 df_salary = read_csv("NBA_season2122_player_salary.csv") %>%
   janitor::clean_names() %>%
-  select(Player=x2,Team=x3,Salary=salary_4) %>%
+  dplyr::select(Player=x2,Team=x3,Salary=salary_4) %>%
   na.omit()
 
 df_salary = df_salary[-1,]
 
 df_stats = read_csv("NBA_season2122_player_stats.csv") %>%
   rename(Team=Tm) %>%
-  select(-Rk)
+  dplyr::select(-Rk)
 
 df_players = inner_join(x=df_salary,y=df_stats,by=c("Player","Team")) %>% 
   janitor::clean_names() %>% 
@@ -41,7 +41,7 @@ df_players = df_players %>%
 
 # Removed variables with missing data and resulted from division of other variables
 df_players = df_players %>% 
-  select(-x3p_percent, -ft_percent, -fg_percent,-x2p_percent,-e_fg_percent)
+  dplyr::select(-x3p_percent, -ft_percent, -fg_percent,-x2p_percent,-e_fg_percent)
 
 # The final generated dataset for use: df_player.
 ```
@@ -52,7 +52,7 @@ df_players = df_players %>%
 
 df_players = df_players %>% 
   separate(salary,into = c("symbol", "salary"),1) %>% 
-  select(-symbol)%>% 
+  dplyr::select(-symbol)%>% 
   mutate(salary = as.numeric(salary)/1000000,
          team = factor(team),
          pos = factor(pos)) %>% 
@@ -119,30 +119,51 @@ nn_with_m_n_layers = function(m,n){
   
 # Build Neural Network
 nn <- neuralnet(salary ~ ., 
-                data = df_train_scaled, hidden = c(10, 5), 
+                data = df_train_scaled, hidden = c(m, n), 
                 linear.output = TRUE)
-plot(nn)
+plot(nn,rep = "best")
 
 summary(nn)
 
 
 pr.train.nn <- compute(nn, df_train_scaled)
 nn.train.MSE = mean((pr.train.nn$net.result - df_train_scaled$salary)^2)
+nn.train.MSE
 
 pr.test.nn <- compute(nn, df_test_scaled)
 nn.test.MSE = mean((pr.test.nn$net.result - df_test_scaled$salary)^2)
+nn.test.MSE
 
 train.MSE.matrix[m,n] = nn.train.MSE
 test.MSE.matrix[m,n] = nn.test.MSE
+
+
+plot(df_train_scaled$salary, pr.train.nn$net.result, col = "red", 
+     main = 'Real vs Predicted')
+abline(0, 1, lwd = 2)
+
+plot(df_test_scaled$salary, pr.test.nn$net.result, col = "red", 
+     main = 'Real vs Predicted')
+abline(0, 1, lwd = 2)
+
 }
 
 
-matrix.row = 5
-matrix.column = 3
+matrix.row = 10
+matrix.column = 5
 train.MSE.matrix = matrix(nrow = matrix.row, ncol = matrix.column)
 test.MSE.matrix = matrix(nrow = matrix.row, ncol = matrix.column)
 
 
+# for(m in 9:matrix.row){
+#   for(n in 4:matrix.column){
+#     nn_with_m_n_layers(m,n)
+#   }
+# }
+
+nn_with_m_n_layers(10,5)
+nn_with_m_n_layers(5,3)
+nn_with_m_n_layers(3,1)
 
 lr = lm(salary ~.,
             data = df_train_scaled)
@@ -151,7 +172,7 @@ pr.train.lr = predict(lr, df_train_scaled)
 lr.train.MSE = mean((pr.train.lr - df_train_scaled$salary)^2)
 
 pr.test.lr = predict(lr, df_test_scaled)
-lr.test.MSE = mean((pr.lr - df_test_scaled$salary)^2)
+lr.test.MSE = mean((pr.test.lr - df_test_scaled$salary)^2)
 ```
 
 ### https://www.geeksforgeeks.org/how-neural-networks-are-used-for-regression-in-r-programming/
