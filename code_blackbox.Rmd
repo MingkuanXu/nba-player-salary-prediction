@@ -15,6 +15,7 @@ library(tidyverse)
 library(caret)
 library(neuralnet)
 library(MASS)
+library(keras)
 ```
 
 ### Data Preprocessing
@@ -164,6 +165,7 @@ test.MSE.matrix = matrix(nrow = matrix.row, ncol = matrix.column)
 nn_with_m_n_layers(10,5)
 nn_with_m_n_layers(5,3)
 nn_with_m_n_layers(3,1)
+nn_with_m_n_layers(1,1)
 
 lr = lm(salary ~.,
             data = df_train_scaled)
@@ -177,3 +179,75 @@ lr.test.MSE = mean((pr.test.lr - df_test_scaled$salary)^2)
 
 ### https://www.geeksforgeeks.org/how-neural-networks-are-used-for-regression-in-r-programming/
 
+
+
+### Blackbox using keras
+
+```{r}
+p <- ncol(df_train_scaled)
+model_1 <- keras_model_sequential()
+model_1 %>% 
+  layer_dense(units = 10, activation ="relu", input_shape = p) %>%
+  layer_dense(units = 5, activation = "relu") %>%
+  layer_dense(units = 1, activation = "linear") 
+
+summary(model_1)
+```
+
+```{r}
+# L2 regularization
+model_2 <- keras_model_sequential()
+model_2 %>% 
+  layer_dense(units = 10, activation ="relu", input_shape = p,
+              kernel_regularizer = regularizer_l2(0.001)) %>%
+  layer_batch_normalization() %>%
+  layer_dense(units = 5, activation = "relu",
+              kernel_regularizer = regularizer_l2(0.001)) %>%
+  layer_batch_normalization() %>%
+  layer_dense(units = 1, activation = "linear") 
+
+summary(model_2)
+```
+
+```{r}
+# Dropout
+model_3 <- keras_model_sequential()
+model_3 %>% 
+  layer_dense(units = 10, activation ="relu", input_shape = p) %>%
+  layer_batch_normalization() %>%
+  layer_dense(units = 5, activation = "relu") %>%
+  layer_batch_normalization() %>%
+  layer_dense(units = 1, activation = "linear") 
+
+summary(model_3)
+
+model_3 %>% compile(loss = "categorical_crossentropy",
+                   optimizer = optimizer_rmsprop(),
+                   metrics = "accuracy")
+```
+
+
+```{r}
+set.seed(8106)
+
+df_train_scaled_x = df_train_scaled[1:21]
+df_train_scaled_y = df_train_scaled$salary
+
+df_test_scaled_x = df_test_scaled[1:21]
+df_test_scaled_y = df_test_scaled$salary
+
+learn <- model3 %>% fit(df_train_scaled_x, df_train_scaled_y,
+                        epochs = 30,
+                        batch_size = 128,
+                        validation_split = 0.2,
+                        verbose = 2)
+# loss and acuracy metric for each epoch
+plot(learn)
+```
+
+
+```{r}
+score <- 
+  model3 %>% evaluate(df_test_scaled_x, df_test_scaled_y)
+score
+```
