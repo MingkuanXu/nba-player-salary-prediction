@@ -64,6 +64,7 @@ df_players = df_players %>%
 
 colnames(df_players) = c("player", "team", "position", "age", "game","game_starting" ,"minute","field_goal", "fg_attempt", "x3p", "x3p_attempt" ,"x2p", "x2p_attempt",   "free_throw",   "ft_attempt", "offensive_rb", "defenssive_rb",  "total_rb" ,   "assistance" ,   "steal" , "block",    "turnover",  "personal_foul", "point", "salary")
 
+
 df_players = df_players %>% 
   distinct(player,.keep_all = TRUE) %>%
   mutate(player = gsub("\\\\.*","",player)) %>%
@@ -120,7 +121,7 @@ plot_data_column = function (data, column) {
         xlab(column) + theme_bw(base_size = 10)
 }
 
-histograms <- lapply(colnames(df_players)[4:24], 
+histograms <- lapply(colnames(df_players)[3:23], 
                        plot_data_column, data = df_players)
 
 figure_a = ggarrange(plotlist = histograms[1:9], 
@@ -170,23 +171,14 @@ theme1$plot.line$lwd <- 2
 theme1$strip.background$col <- rgb(.0, .2, .6, .2) 
 trellis.par.set(theme1)
 
-df_features = df_players[4:13]
+df_features = df_players[3:23]
 featurePlot(x = df_features, 
             y = df_players$salary,
             plot = "scatter",
             # span = .5,
             labels = c("Predictors","Player Salary (Millions)"), 
             type = c("p", "smooth"), 
-            layout = c(5, 2))
-
-df_features = df_players[14:23]
-featurePlot(x = df_features, 
-            y = df_players$salary,
-            plot = "scatter",
-            # span = .5,
-            labels = c("Predictors","Player Salary (Millions)"), 
-            type = c("p", "smooth"), 
-            layout = c(5, 2))
+            layout = c(7, 3))
 ```
 
 From categorical variable `position`, extremely high values in salary show in all positions and some teams.
@@ -207,5 +199,5 @@ df_players %>%
 set.seed(8106)
 
 indexTrain <- createDataPartition(y = df_players$salary, p = 0.75, list = FALSE, times = 1)
-ctrl1 <- trainControl(method = "cv", number = 10)
+ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
 ```

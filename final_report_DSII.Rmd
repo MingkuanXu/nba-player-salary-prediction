@@ -186,7 +186,7 @@ plot_data_column = function (data, column) {
         xlab(column) + theme_bw(base_size = 10)
 }
 
-histograms <- lapply(colnames(df_players)[4:24], 
+histograms <- lapply(colnames(df_players)[3:23], 
                        plot_data_column, data = df_players)
 
 figure_a = ggarrange(plotlist = histograms[1:9], 
@@ -294,7 +294,7 @@ box1 + box2
 set.seed(8106)
 
 indexTrain <- createDataPartition(y = df_players$salary, p = 0.75, list = FALSE, times = 1)
-ctrl1 <- trainControl(method = "cv", number = 10)
+ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
 ```
 
 
@@ -326,7 +326,7 @@ plot_data_column = function (data, column) {
         xlab(column) + theme_bw(base_size = 10)
 }
 
-histograms <- lapply(colnames(df_players)[4:24], 
+histograms <- lapply(colnames(df_players)[3:23], 
                        plot_data_column, data = df_players)
 
 figure_a = ggarrange(plotlist = histograms[1:9], 
