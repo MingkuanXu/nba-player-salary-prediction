@@ -150,7 +150,7 @@ annotate_figure(figure_c,
 ```{r}
 
 df_corr_1 = df_players %>% 
-  select(-player, -team,-position)
+  select(-team,-position)
 
 corrplot(cor(df_corr_1),type = "lower")
 
@@ -170,14 +170,23 @@ theme1$plot.line$lwd <- 2
 theme1$strip.background$col <- rgb(.0, .2, .6, .2) 
 trellis.par.set(theme1)
 
-df_features = df_players[4:24]
+df_features = df_players[4:13]
 featurePlot(x = df_features, 
             y = df_players$salary,
             plot = "scatter",
             # span = .5,
             labels = c("Predictors","Player Salary (Millions)"), 
             type = c("p", "smooth"), 
-            layout = c(7, 3))
+            layout = c(5, 2))
+
+df_features = df_players[14:23]
+featurePlot(x = df_features, 
+            y = df_players$salary,
+            plot = "scatter",
+            # span = .5,
+            labels = c("Predictors","Player Salary (Millions)"), 
+            type = c("p", "smooth"), 
+            layout = c(5, 2))
 ```
 
 From categorical variable `position`, extremely high values in salary show in all positions and some teams.
