@@ -51,10 +51,10 @@ We use k-mean clustering to cluster variable `team` in the training data
 with class number k = 3. Variable `team` are clustered into the
 following 3 clusters:
 
--   Cluster 1: CHO, DAL, DEN, DET, HOU, IND, NYK, OKC, ORL, POR, SAS,
-    TOR
--   Cluster 2: ATL, BOS, CHI, CLE, LAC, MEM, MIN, SAC, UTA
--   Cluster 3: BRK, GSW, LAL, MIA, MIL, NOP, PHI, PHO, WAS
+-   Cluster 1: BRK, GSW, LAL, MIA, MIL, NOP, PHI, POR, UTA
+-   Cluster 2: ATL, CHI, CHO, CLE, DAL, DEN, DET, HOU, IND, MEM, MIN,
+    NYK, OKC, ORL, PHO, SAC, SAS, TOR
+-   Cluster 3: BOS, LAC, WAS
 
 ![](tree_final_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->![](tree_final_files/figure-gfm/unnamed-chunk-9-2.png)<!-- -->
 
@@ -63,20 +63,20 @@ We add class labels for the newly generated clusters of `team` as
 
 ### Random forest
 
-    ##     mtry splitrule min.node.size
-    ## 128   26  variance             2
+    ##    mtry splitrule min.node.size
+    ## 97   26  variance             1
 
 ![](tree_final_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ### gbm
 
     ##    n.trees interaction.depth shrinkage n.minobsinnode
-    ## 47    2000                 6     0.002              1
+    ## 28    6000                 5     8e-04              1
 
 ![](tree_final_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
     ## A gradient boosted model with gaussian loss function.
-    ## 2000 iterations were performed.
+    ## 6000 iterations were performed.
     ## There were 27 predictors of which 27 had non-zero influence.
 
 ### Comparison of Tree-based models
@@ -84,24 +84,58 @@ We add class labels for the newly generated clusters of `team` as
 ![](tree_final_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
     ##              model  cv_rmse
-    ## 1  rf_cluster_team 5.137371
-    ## 2 gbm_cluster_team 5.102139
+    ## 1  rf_cluster_team 5.422160
+    ## 2 gbm_cluster_team 5.408213
 
 ### Best tree model
 
-Random forest with tuning parameters:
+Generalized Boosted Regression Modeling (GBM) with tuning parameters:
 
--   `mytry = 26`: number of variables to possibly split at in each node.
+-   `n.trees = 6000`: the total number of trees to fit
 
--   `min.node.size = 3`: Optimal minimal node size.
+-   `interaction.depth = 5`: maximum depth of each tree
 
-Test error:
+-   `shrinkage = 0.0008`: learning rate
 
-    ## [1] 5.559568
+-   `n.minobsinnode = 1`: the minimum number of observations in the
+    terminal nodes of the trees
+
+Test error: 4.745948
+
+    ## [1] 4.745948
 
 Variable Importance:
 
 ![](tree_final_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+
+    ##                         var     rel.inf
+    ## minute               minute 36.80766413
+    ## age                     age 15.27024366
+    ## point                 point  8.20004685
+    ## free_throw       free_throw  7.80013401
+    ## fg_attempt       fg_attempt  5.07019798
+    ## game_starting game_starting  3.45628930
+    ## assistance       assistance  2.61183908
+    ## ft_attempt       ft_attempt  2.18387162
+    ## team_cluster2 team_cluster2  2.06013694
+    ## defenssive_rb defenssive_rb  1.63905099
+    ## turnover           turnover  1.61437208
+    ## personal_foul personal_foul  1.60872804
+    ## block                 block  1.56168258
+    ## field_goal       field_goal  1.45090683
+    ## game                   game  1.36309336
+    ## x3p                     x3p  1.36115057
+    ## x2p                     x2p  1.28342555
+    ## x2p_attempt     x2p_attempt  1.21499282
+    ## x3p_attempt     x3p_attempt  1.00544349
+    ## steal                 steal  0.69500781
+    ## total_rb           total_rb  0.68620168
+    ## positionPF       positionPF  0.44308976
+    ## offensive_rb   offensive_rb  0.42966587
+    ## team_cluster3 team_cluster3  0.10085567
+    ## positionSF       positionSF  0.03322843
+    ## positionPG       positionPG  0.02802297
+    ## positionSG       positionSG  0.02065793
 
 Prediction on new observations:
 
@@ -109,10 +143,10 @@ Prediction on new observations:
 
 True salary (in million) for new observations:
 
-    ##                  salary
-    ## Aaron Gordon  16.409091
-    ## Aaron Wiggins  1.000000
-    ## Al Horford    27.000000
-    ## Alize Johnson  0.804978
-    ## Anthony Davis 35.361360
-    ## Anthony Gill   1.517981
+    ##                     salary
+    ## Cade Cunningham  10.050120
+    ## Cam Reddish       4.670160
+    ## Christian Wood   13.666667
+    ## Corey Kispert     3.383640
+    ## D'Angelo Russell 30.013500
+    ## Danuel House Jr.  2.045094

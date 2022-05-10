@@ -269,7 +269,7 @@ df_players2 = inner_join(x = df_players,y = team_dict,by = "team") %>%
 ```{r}
 
 rf.grid3 <- expand.grid(
-  mtry = 10:26,
+  mtry = 15:26,
   splitrule = "variance",
   min.node.size = 1:6)
 
@@ -291,7 +291,7 @@ ggplot(rf.fit3, highlight = TRUE)
 
 
 ```{r}
-gbm.grid3 <- expand.grid(n.trees = c(3000,4000,5000,6000,7000,8000),
+gbm.grid3 <- expand.grid(n.trees = c(4000,5000,6000,7000),
                         interaction.depth = 4:6,
                         shrinkage = c(0.0007,0.0008,0.001),
                         n.minobsinnode = 1)
@@ -335,22 +335,18 @@ data.frame(
 
 ### Best tree model
 
-Generalized Boosted Regression Modeling (GBM) with tuning parameters: 
+Random forest with tuning parameters: 
 
-* `n.trees = 6000`: the total number of trees to fit
+* `mytry = 28`: number of variables to possibly split at in each node. 
 
-* `interaction.depth = 5`: maximum depth of each tree
+* `min.node.size = 3`: Optimal minimal node size.
 
-* `shrinkage = 0.0008`: learning rate 
-
-* `n.minobsinnode = 1`: the minimum number of observations in the terminal nodes of the trees
-
-Test error: 4.745948
+Test error: 
 
 ```{r}
 
 y_test = df_players[-indexTrain,]$salary
-y_pred <- predict(gbm.fit3, newdata = df_players2[-indexTrain,])
+y_pred <- predict(rf.fit3, newdata = df_players2[-indexTrain,])
 sqrt(mean((y_pred - y_test)^2))
 
 ```
@@ -360,21 +356,34 @@ Variable Importance:
 
 
 ```{r}
-summary(gbm.fit3$finalModel, las = 2, cBars = 10, cex.names = 0.6)
+
+df_pred = data.frame(df_players2)
+rownames(df_pred) = rownames(df_players)
+
+
+set.seed(8106)
+vip(rf.fit3, 
+    method = "permute", 
+    train = df_pred[indexTrain,],
+    target = "salary",
+    metric = "RMSE",
+    nsim = 10,
+    pred_wrapper = predict,
+    geom = "col", 
+    all_permutations = TRUE,
+    mapping = aes_string(fill = "Variable")) 
 ```
 
 Prediction on new observations:
 
 ```{r, warning=FALSE, fig.height = 8, fig.width = 8}
 
-df_pred = data.frame(df_players2)
-rownames(df_pred) = rownames(df_players)
 
-explainer.gbm <- lime(df_pred[indexTrain,-24], gbm.fit3)
+explainer.rf <- lime(df_pred[indexTrain,-24], rf.fit3)
 
-new_obs <- df_pred[-indexTrain,-24][10:15,]
+new_obs <- df_pred[-indexTrain,-24][1:6,]
 explanation.obs <- explain(new_obs,
-                           explainer.gbm, 
+                           explainer.rf, 
                            n_features = 10)
 plot_features(explanation.obs)
 ```
@@ -382,7 +391,7 @@ plot_features(explanation.obs)
 True salary (in million) for new observations: 
 
 ```{r}
-df_pred[-indexTrain,][10:15,] %>% 
+df_pred[-indexTrain,][1:6,] %>% 
   select(salary)
 ```
 
