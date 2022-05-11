@@ -1,0 +1,271 @@
+---
+title: "P8106 Final - Final Model: GBM"
+author: "Mingkuan Xu, Mengfan Luo, Yiqun Jin"
+date: "5/6/2022"
+output: github_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,dpi=300)
+library(tidyverse)
+library(caret)
+library(patchwork)
+library(mgcv)
+library(earth)
+library(corrplot)
+library(vip)
+library(ggpubr)
+library(ranger)
+library(gbm)
+library(factoextra)
+library(lime)
+```
+
+
+# Data Preprocessing
+
+```{r joining datasets}
+df_salary = read_csv("NBA_season2122_player_salary.csv") %>%
+  janitor::clean_names() %>%
+  select(Player=x2,Team=x3,Salary=salary_4) %>%
+  na.omit()
+
+df_salary = df_salary[-1,]
+
+df_stats = read_csv("NBA_season2122_player_stats.csv") %>%
+  rename(Team=Tm) %>%
+  select(-Rk)
+
+df_players = inner_join(x=df_salary,y=df_stats,by=c("Player","Team")) %>% 
+  janitor::clean_names() %>% 
+  distinct()
+
+df_players = df_players %>% 
+  arrange(player,desc(g)) %>% 
+  distinct(player,.keep_all = TRUE)
+
+# Removed variables with missing data and resulted from division of other variables
+df_players = df_players %>% 
+  select(-x3p_percent, -ft_percent, -fg_percent,-x2p_percent,-e_fg_percent)
+
+# The final generated dataset for use: df_player.
+```
+
+
+```{r data cleaning}
+# Convert salary from characters to numbers.
+# Convert categorical variables to factors
+
+df_players = df_players %>% 
+  separate(salary,into = c("symbol", "salary"),1) %>% 
+  select(-symbol)%>% 
+  mutate(salary = as.numeric(salary)/1000000,
+         team = factor(team),
+         pos = factor(pos)) %>% 
+  relocate(salary, .after = last_col())
+
+colnames(df_players) = c("player", "team", "position", "age", "game","game_starting" ,"minute","field_goal", "fg_attempt", "x3p", "x3p_attempt" ,"x2p", "x2p_attempt",   "free_throw",   "ft_attempt", "offensive_rb", "defenssive_rb",  "total_rb" ,   "assistance" ,   "steal" , "block",    "turnover",  "personal_foul", "point", "salary")
+
+df_players = df_players %>% 
+  distinct(player,.keep_all = TRUE) %>%
+  mutate(player = gsub("\\\\.*","",player)) %>%
+  `row.names<-`(., NULL) %>% 
+  column_to_rownames('player')
+```
+
+
+```{r}
+# Convert count data to rate by dividing variable `minute`
+
+df_players = df_players %>% 
+  mutate(field_goal = field_goal/minute,
+         fg_attempt = fg_attempt/minute,
+         x3p = x3p/minute,
+         x3p_attempt = x3p_attempt/minute,
+         x2p = x2p/minute,
+         x2p_attempt = x2p_attempt/minute,
+         free_throw = free_throw/minute,
+         ft_attempt = ft_attempt/minute,
+         offensive_rb = offensive_rb/minute,
+         defenssive_rb = defenssive_rb/minute,
+         total_rb = total_rb/minute,
+         assistance = assistance/minute,
+         steal = steal/minute,
+         block = block/minute,
+         turnover = turnover/minute,
+         personal_foul = personal_foul/minute,
+         point = point/minute) 
+```
+
+
+```{r}
+# Data partition
+set.seed(8106)
+
+indexTrain <- createDataPartition(y = df_players$salary, p = 0.8, list = FALSE, times = 1)
+df_train <- df_players[indexTrain, ]
+df_test <- df_players[-indexTrain, ]
+df_train_2 = model.matrix(salary ~ ., df_train)[ ,-1]
+df_test_2 = model.matrix(salary ~ ., df_test)[ ,-1]
+x = df_train_2
+y = df_train %>% pull(salary)
+
+ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
+```
+
+
+
+## Feature engineering for tree-based models
+
+
+```{r}
+df_team = df_players[indexTrain,] %>% 
+  group_by(team) %>% 
+  summarize(median = median(salary),
+            sd = sd(salary)) %>% 
+  mutate(team = as.character(team))
+
+df_team1 = data.frame(median = df_team$median, sd = df_team$sd)
+rownames(df_team1) = df_team$team
+df_team1  = scale(df_team1)
+
+```
+
+We use k-mean clustering to cluster variable `team` in the training data with class number k = 3. Variable `team`  are clustered into the following 3 clusters:
+
+* Cluster 1: BRK, GSW, LAL, MIA, MIL, NOP, PHI, POR, UTA
+* Cluster 2: ATL, CHI, CHO, CLE, DAL, DEN, DET, HOU, IND, MEM, MIN, NYK, OKC, ORL, PHO, SAC, SAS, TOR
+* Cluster 3: BOS, LAC, WAS
+
+```{r, fig.height=3.5}
+
+set.seed(8106)
+fviz_nbclust(df_team1,
+             FUNcluster = kmeans,
+             method = "silhouette")
+
+km <- kmeans(df_team1, centers = 3, nstart = 30)
+
+km_vis <- fviz_cluster(list(data = df_team1, cluster = km$cluster), 
+                       ellipse.type = "convex", 
+                       geom = c("point","text"),
+                       labelsize = 5, 
+                       palette = "Dark2") + labs(title = "K-means") 
+
+km_vis
+
+team_dict = data.frame(
+  team = df_team$team,
+  team_cluster = factor(unname(km$cluster))
+)
+
+```
+
+
+We add class labels for the newly generated clusters of `team` as `team_cluster`, with values 1, 2, and 3 representing each clusters.
+
+```{r}
+df_players2 = inner_join(x = df_players,y = team_dict,by = "team") %>% 
+  relocate(team_cluster, .before = team) %>% 
+  select(-team)
+  
+```
+
+
+
+### Final model: GBM
+
+Our best mdoel is Generalized Boosted Regression Modeling (GBM) with tuning parameters: 
+
+* `n.trees = 6000`: the total number of trees to fit
+
+* `interaction.depth = 5`: maximum depth of each tree
+
+* `shrinkage = 0.0008`: learning rate 
+
+* `n.minobsinnode = 1`: the minimum number of observations in the terminal nodes of the trees
+
+
+```{r}
+gbm.grid3 <- expand.grid(n.trees = c(3000,4000,5000,6000,7000,8000),
+                        interaction.depth = 4:6,
+                        shrinkage = c(0.0007,0.0008,0.001),
+                        n.minobsinnode = 1)
+
+set.seed(8106)
+gbm.fit3 <- train(salary ~ . , 
+                 df_players2[indexTrain,][1:24], 
+                 method = "gbm",
+                 tuneGrid = gbm.grid3,
+                 trControl = ctrl1,
+                 verbose = FALSE)
+gbm.fit3$bestTune
+
+ggplot(gbm.fit3, highlight = TRUE)
+
+gbm.fit3$finalModel
+
+```
+
+
+Variable Importance:
+
+10 most important variables (computed from permuting OOB data) are `minute`, `age`, `point`, `free_throw`, `fg_attempt`, `game_starting`, `assistance`, `ft_attempt`, `team_cluster`, and `defensive_rb.` 
+
+```{r}
+summary(gbm.fit3$finalModel, las = 2, cBars = 10, cex.names = 0.6)
+```
+
+With our fitted GBM model, we can make prediction on new observations. The RMSE on our test data is 4.745948.
+
+```{r}
+
+y_test_gbm = df_players[-indexTrain,]$salary
+y_pred_gbm <- predict(gbm.fit3, newdata = df_players2[-indexTrain,])
+sqrt(mean((y_pred_gbm - y_test_gbm)^2))
+
+```
+
+Given GBM is a black-box model, we refer to `lime` package to achieve explanations of the result of the model on new observations, by fitting a simpler model to the permuted data with the above 15 most important features. We randomly selected 6 observations of the test data. The players' name, true salary (in million), and predicted salary from GBM are:
+
+
+```{r}
+
+df_pred = data.frame(df_players2)
+rownames(df_pred) = rownames(df_players)
+
+test_player = rownames(df_players[-indexTrain,])
+
+new_pred = data.frame(
+  player = test_player[10:15],
+  true_salary = y_test_gbm[10:15],
+  predicted_salary = y_pred_gbm[10:15]) %>% 
+  knitr::kable(caption = "True and Predicted Salary of 6 Random New Observarions")
+
+new_pred
+
+```
+
+The explanation of the GBM model from lime are as followed. Inside the plot, the x-axis shows the relative strength of each variables, and positive values (blue) show that the the variable increase the value of the prediction, while the negative values (red) decrease the prediction value. 
+
+Take the first case of player Cade Cunningham as an example. Cade's true salary is 10.050120 million. His predicted salary from GBM is 8.590868 million, which are quite similar to each other. Among the 10 most important variables, factors `mintue > 90`, `point > 0.5`,  `game_starting > 43.8`, `assistance > 0.1241`, `fg_attempt > 0.401` and `x2p_attempt > 0.269` increases Cade's salary, while factors `age <= 23`, `turnover > 0.065`, `0.057 < free_throw <= 0.082` and `team_cluster = 2` decreases his salary.
+
+```{r, warning=FALSE, fig.height = 8, fig.width = 8}
+
+explainer.gbm <- lime(df_pred[indexTrain,-24], gbm.fit3)
+
+new_obs <- df_pred[-indexTrain,-24][10:15,]
+explanation.obs <- explain(new_obs,
+                           explainer.gbm, 
+                           n_features = 10)
+
+plot_features(explanation.obs)
+```
+
+
+
+
+
+
+
