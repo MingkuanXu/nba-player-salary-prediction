@@ -278,12 +278,15 @@ df_test_scaled_x = scale(model.matrix(salary~., df_test_noc)[,-1],center = TRUE,
 df_test_scaled_y = df_test$salary
 
 learn <- model_3 %>% fit(df_train_scaled_x, df_train_scaled_y, 
-                        epochs = 200,
+                        epochs = 250,
                         batch_size = 32,
                         validation_split = 0.2,
                         verbose = 2)
-# loss and acuracy metric for each epoch
-plot(learn)
+# loss and accuracy metric for each epoch
+figure_nn_2 = plot(learn) + xlab("Epochs") + ylab("MSE") +
+  theme_bw()
+
+ggsave(filename = "report_figures/figure_nn_2.png",dpi = 300,width = 6, height = 4)
 ```
 
 
