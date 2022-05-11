@@ -212,10 +212,11 @@ df_players %>%
 
 ## Data Partition
 
-After getting an overview of data from exploratory analysis, we splitted the dataset into training (75%) and testing (20%). We would use 10 fold repeated cross validation to compare each model using training data and then select a best model to predict on testing data. Based on the exploratory analysis, we would build 7 models in three category: 
+After getting an overview of data from exploratory analysis, we splitted the dataset into training (75%) and testing (20%). We would use 10 fold repeated cross validation to compare each model using training data and then select a best model to predict on testing data. Based on the exploratory analysis, we would build 8 models in four category: 
 1. Linear Regression: (1) simple Linear Regression Model, (2) Elastic-net Model, (3) Principal Component Regression Model (PCR)
 2. Generalized Linear Regression: (4) Generalized Addictive Model (GAM), (5) Multivariate Adaptive Regression Splines Model (MARS)
-3. Other Non-linear Models: (6) Random Forest, (7) Blackbox Model (neural network)
+3. Tree based Models Models: (6) Random Forest, (7) Generalized Boosted Regression Modeling (GBM)
+4. Blackbox Model (8) neural network
 
 ```{r}
 # Data partition
@@ -249,7 +250,7 @@ lm.mse
 
 ### (b) Elastic Net 
 
-The elastic-net model has two parameter, which are alpha for the compromise between LASSO and ridge and lambda for the complexity. The elastic-net model reached its best tune at $\alpha = 1$ (i.e. LASSO model) and lambda = 0.27.
+The elastic-net model has two parameter, which are alpha (compromise between LASSO and ridge) and lambda (the penalty term limits the number or magnitude of predictor coefficients). The elastic-net model reached its best tune at $\alpha = 1$ (i.e. LASSO model) and lambda = 0.27.
 
 ```{r elastic net, echo = FALSE, message = FALSE, warning = FALSE}
 set.seed(8106)
@@ -257,7 +258,7 @@ elnet.fit <- train(x, y, method = "glmnet",
                    tuneGrid = expand.grid(alpha = seq(0, 1, length = 11),
                    lambda = exp(seq(3, -3, length = 100))),
                    trControl = ctrl1)
-elnet.fit$bestTune
+elnet.fit$bestTune$lambda
 myCol <- rainbow(25)
 myPar <- list(superpose.symbol = list(col = myCol),
               superpose.line = list(col = myCol)) 
