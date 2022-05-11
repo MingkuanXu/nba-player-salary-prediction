@@ -19,32 +19,53 @@ We will conduct data analysis and model construction based on two datasets on NB
 
 The final cleaned dataset has 442 records and 24 variables, including 2 categorical variables, 21 numerical variables and 1 numeric response variable `salary`.
 
-| Variable Name|  Meaning                                      | Varianble Type         |
-|:------------ |:----------------------------------------------|:-----------------------|
-|position      |Position of the player                         |categorical (5 classes) |
-|age           |Player's age on February 1 of the season       |numeric                 |
-|team          |Team that the player belong to                 |categorical (30 classes)|
-|game          |Number of games played                         |numeric                 |
-|game_starting |Number of games played as a starter            |numeric                 |
-|minute        |Minutes played per game                        |numeric                 |
-|field_goal    |Field goals per minute                         |numeric                 |
-|fg_attempt    |Field goal attempts per minute                 |numeric                 |
-|x3p           |3-point field goals per minute                 |numeric                 |
-|x3p_attempt   |3-point field goal attempts per minute         |numeric                 |
-|x2p           |2-point field goals per minute                 |numeric                 |
-|x2p_attempt   |2-point field goal attempts per minute         |numeric                 |
-|free_throw    |Free throws per minute                         |numeric                 |
-|ft_attempt    |Free throw attempts per minute                 |numeric                 |
-|offensive_rb  |Offensive rebounds per minute                  |numeric                 |
-|defenssive_rb |Defensive rebounds per minute                  |numeric                 |
-|total_rb      |Total rebounds per minute                      |numeric                 |
-|assistance    |Assists per minute                             |numeric                 |
-|steal         |Steals per minute                              |numeric                 |
-|block         |Blocks per minute                              |numeric                 |
-|turnover      |Turnovers per minute                           |numeric                 |
-|personal_foul |Personal fouls per minute                      |numeric                 |
-|point         |Points per minute                              |numeric                 |
-|salary        |Salary of the player in million (Response)     |numeric                 |
+- `position` -- Position of the player (5 categories)
+
+- `age` -- Player's age on February 1 of the season
+
+- `team` -- Team that the player belong to. (30 categories)
+
+- `game` -- Number of games played per minute
+
+- `game_starting` -- Number of games played as a starter per minute
+
+- `minute` -- Minutes played per game
+
+- `field_goal` -- Field goals per minute
+
+- `fg_attempt` -- Field goal attempts per minute
+
+- `x3p` -- 3-point field goals per minute
+
+- `x3p_attempt` -- 3-point field goal attempts per minute
+
+- `x2p` -- 2-point field goals per minute
+
+- `x2p_attempt` -- 2-point field goal attempts per minute
+
+- `free_throw` -- Free throws per minute
+
+- `ft_attempt` -- Free throw attempts per minute
+
+- `offensive_rb` -- Offensive rebounds per minute
+
+- `defenssive_rb` -- Defensive rebounds per minute
+
+- `total_rb` -- Total rebounds per minute
+
+- `assistance` -- Assists per minute
+
+- `steal` -- Steals per minute
+
+- `block` -- Blocks per minute
+
+- `turnover` -- Turnovers per minute
+
+- `personal_foul` -- Personal fouls per minute
+
+- `point` -- Points per minute
+
+- `salary` -- Salary of the player in million
 
 ## Exploratory Analysis 
 
