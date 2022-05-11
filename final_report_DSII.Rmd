@@ -6,11 +6,7 @@ output: pdf_document
 
 ## Introduction
 
-<<<<<<< HEAD
 For teams in the National Basketball Association (NBA), a key strategy to win more games is to properly allocate their salary cap - an agreement that places a limit on the amount of money that a team can spend on players' salaries. How to evaluate the performance of each NBA player and give a suitable level of salary is a complicated problem. In this project, we intend to predict the salary of NBA players in the 2021-2022 season based on their game statistics. We collected game statistics that are commonly used to evaluate players from the NBA official website, built both linear and non-linear models, including linear regression, elastic net regression, principle component regression (PCR), generalized addictive model (GAM), multivariate adaptive regression spline (MARS) model, random forest and neural network on selected feature variables, and compared these models to determine a final predictive model. 
-=======
-For any team in the National Basketball Association (NBA), a key strategy to win more games is to properly allocate their salary cap - an agreement that places a limit on the amount of money that a team can spend on players' salaries. How to evaluate the performance of each NBA player and give a suitable level of salary is a therefore complicated problem.  In this project, we intend to predict the salary of NBA players in the 2021-2022 season based on their game statistics. We collected game statistics that are commonly used to evaluate players from the NBA official website, built both linear and non-linear models, including linear regression, elastic net, GAM, MARS, random forest, , on selected feature variables, and compared these models to determine a final predictive model. 
->>>>>>> 9a78f33972b3cd0afd032822d05565e5ccd9b5af
 
 ## Data Preprocessing
 
@@ -83,33 +79,25 @@ For numeric variables, some of them (`gs`, `ft`, `orb`,`blk`), including respons
 
 ### Correlation Analysis
 
-From the correlation heat map, it is obvious that multicolinearity could be a problem, which we may consider using penalized models (ridge, lasso) or ensembled models (random forest, boosting, neural network) to fix.
-
-
-### Analyzing trends in data
-
-The feature maps demonstrated that some correlations are non-linear, which we may consider using GAM or MARS to address.
-
+From the correlation heat map, it is obvious that multicolinearity could be a problem, which we may consider using penalized models (ridge, lasso) or ensembled models (random forest, boosting, neural network) to fix. The feature maps demonstrated that some correlations are non-linear, which we may consider using GAM or MARS to address.
 
 From categorical variable `position` and `team`, extremely high values and large variance in salary show in all positions and some teams.
 
 
 ## Model Construction
 
-* What predictor variables did you include?
-* What technique did you use? What assumptions, if any, are being made by using this technique?
-* If there were tuning parameters, how did you pick their values?
-* Discuss the training/test performance if you have a test data set.
-* Which variables play important roles in predicting the response?
-* **Explain/visualize the final model you select.**
-* What are the limitations of the models you used (if there are any)? Are the models flexible enough to capture the underlying truth?
+### Neural Network
+
+Several 2 hidden-layer neural networks were built to fit the data. Despite trying different number of nodes and applying regularization techniques (L2 and dropout), the resulting models still have a noticeable overfitting problem. Given the size of the dataset is very small ($n=442$), the performance of neural network is not as good as some traditional statistical models. It is more useful when the size of dataset is much larger with more variables. 
+
+
+As shown in the figure, as the number of nodes in the first and second hidden layers increases, neural networks can provide very accurate fittings of the training data, with much lower MSEs compared to other methods. However, the predictions are not satisfying when the models are applying to the test data.
+![Performance of neural networks with different number of hidden layers](report_figures/figure_nn_1.png)
 
 ## Model Comparasion
 
 
 ## Conclusion
-
-* What were your findings? Are they what you expect? What insights into the data can you make?
 
 
 \newpage
@@ -132,5 +120,9 @@ From categorical variable `position` and `team`, extremely high values and large
 ![Figure A3](report_figures/appendixA_figure3.png)
 
 ### Appendix B - Numeric Variable Distribution
+
+### Appendix C - Neural Network Model
+
+<!--![Figure C](report_figures/appendix_NN_a.pdf) -->
 
 
