@@ -67,6 +67,12 @@ df_players = df_players %>%
 
 colnames(df_players) = c("player", "team", "position", "age", "game","game_starting" ,"minute","field_goal", "fg_attempt", "x3p", "x3p_attempt" ,"x2p", "x2p_attempt",   "free_throw",   "ft_attempt", "offensive_rb", "defenssive_rb",  "total_rb" ,   "assistance" ,   "steal" , "block",    "turnover",  "personal_foul", "point", "salary")
 
+
+df_players = df_players %>% 
+  distinct(player,.keep_all = TRUE) %>%
+  mutate(player = gsub("\\\\.*","",player)) %>%
+  `row.names<-`(., NULL) %>% 
+  column_to_rownames('player')
 ```
 
 ## Part 1 - Exploratory Analysis 
@@ -118,7 +124,7 @@ plot_data_column = function (data, column) {
         xlab(column) + theme_bw(base_size = 10)
 }
 
-histograms <- lapply(colnames(df_players)[4:24], 
+histograms <- lapply(colnames(df_players)[3:23], 
                        plot_data_column, data = df_players)
 
 figure_a = ggarrange(plotlist = histograms[1:9], 
@@ -148,7 +154,7 @@ annotate_figure(figure_c,
 ```{r}
 
 df_corr_1 = df_players %>% 
-  select(-player, -team,-position)
+  select(-team,-position)
 
 corrplot(cor(df_corr_1),type = "lower")
 
@@ -168,7 +174,7 @@ theme1$plot.line$lwd <- 2
 theme1$strip.background$col <- rgb(.0, .2, .6, .2) 
 trellis.par.set(theme1)
 
-df_features = df_players[4:24]
+df_features = df_players[3:23]
 featurePlot(x = df_features, 
             y = df_players$salary,
             plot = "scatter",
@@ -195,8 +201,8 @@ df_players %>%
 # Data partition
 set.seed(8106)
 
-indexTrain <- createDataPartition(y = df_players$salary, p = 0.75, list = FALSE, times = 1)
-ctrl1 <- trainControl(method = "cv", number = 10, repeats = 5)
+indexTrain <- createDataPartition(y = df_players$salary, p = 0.8, list = FALSE, times = 1)
+ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
 ```
 
 
@@ -209,13 +215,13 @@ ctrl1 <- trainControl(method = "cv", number = 10, repeats = 5)
 ```{r}
 
 rf.grid <- expand.grid(
-  mtry = 30:54,
+  mtry = 30:53,
   splitrule = "variance",
   min.node.size = 1:6)
 
 set.seed(8106)
 rf.fit <- train(salary ~ . , 
-                df_players[indexTrain,][2:25],
+                df_players[indexTrain,][1:24],
                 method = "ranger",
                 tuneGrid = rf.grid,
                 trControl = ctrl1)
@@ -229,14 +235,14 @@ ggplot(rf.fit, highlight = TRUE)
 #### 1-2. gbm
 
 ```{r}
-gbm.grid <- expand.grid(n.trees = c(2000,3000,4000,5000),
-                        interaction.depth = 1:5,
-                        shrinkage = c(0.0008,0.001,0.002),
+gbm.grid <- expand.grid(n.trees = c(4000,5000,6000,7000),
+                        interaction.depth = 4:5,
+                        shrinkage = c(0.0006, 0.0008,0.001),
                         n.minobsinnode = 1)
 
 set.seed(8106)
 gbm.fit <- train(salary ~ . , 
-                 df_players[indexTrain,][2:25], 
+                 df_players[indexTrain,][1:24], 
                  method = "gbm",
                  tuneGrid = gbm.grid,
                  trControl = ctrl1,
@@ -257,13 +263,13 @@ gbm.fit$finalModel
 ```{r}
 
 rf.grid2 <- expand.grid(
-  mtry = 5:25,
+  mtry = 5:24,
   splitrule = "variance",
   min.node.size = 1:6)
 
 set.seed(8106)
 rf.fit2 <- train(salary ~ . , 
-                df_players[indexTrain,][3:25],
+                df_players[indexTrain,][2:24],
                 method = "ranger",
                 tuneGrid = rf.grid2,
                 trControl = ctrl1)
@@ -277,14 +283,14 @@ ggplot(rf.fit2, highlight = TRUE)
 #### 2-2. gbm
 
 ```{r}
-gbm.grid2 <- expand.grid(n.trees = c(2000,3000,4000,5000),
-                        interaction.depth = 1:5,
-                        shrinkage = c(0.0008,0.001,0.002),
+gbm.grid2 <- expand.grid(n.trees = c(4000,5000,6000,7000),
+                        interaction.depth = 3:5,
+                        shrinkage = c(0.0006,0.0008,0.001),
                         n.minobsinnode = 1)
 
 set.seed(8106)
 gbm.fit2 <- train(salary ~ . , 
-                 df_players[indexTrain,][3:25], 
+                 df_players[indexTrain,][2:24], 
                  method = "gbm",
                  tuneGrid = gbm.grid2,
                  trControl = ctrl1,
@@ -362,13 +368,13 @@ df_players2 = inner_join(x = df_players,y = team_dict,by = "team") %>%
 ```{r}
 
 rf.grid3 <- expand.grid(
-  mtry = 5:27,
+  mtry = 5:26,
   splitrule = "variance",
   min.node.size = 1:6)
 
 set.seed(8106)
 rf.fit3 <- train(salary ~ . , 
-                df_players2[indexTrain,][2:25],
+                df_players2[indexTrain,][1:24],
                 method = "ranger",
                 tuneGrid = rf.grid3,
                 trControl = ctrl1)
@@ -382,14 +388,14 @@ ggplot(rf.fit3, highlight = TRUE)
 #### 3-2. gbm
 
 ```{r}
-gbm.grid3 <- expand.grid(n.trees = c(1000,2000,3000,4000,5000),
-                        interaction.depth = 2:6,
-                        shrinkage = c(0.001,0.002,0.003),
+gbm.grid3 <- expand.grid(n.trees = c(4000,5000,6000,7000),
+                        interaction.depth = 4:6,
+                        shrinkage = c(0.0007,0.0008,0.001),
                         n.minobsinnode = 1)
 
 set.seed(8106)
 gbm.fit3 <- train(salary ~ . , 
-                 df_players2[indexTrain,][2:25], 
+                 df_players2[indexTrain,][1:24], 
                  method = "gbm",
                  tuneGrid = gbm.grid3,
                  trControl = ctrl1,

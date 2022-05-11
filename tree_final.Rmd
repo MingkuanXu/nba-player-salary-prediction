@@ -201,7 +201,7 @@ df_players %>%
 # Data partition
 set.seed(8106)
 
-indexTrain <- createDataPartition(y = df_players$salary, p = 0.75, list = FALSE, times = 1)
+indexTrain <- createDataPartition(y = df_players$salary, p = 0.8, list = FALSE, times = 1)
 ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
 ```
 
@@ -226,10 +226,9 @@ df_team1  = scale(df_team1)
 
 We use k-mean clustering to cluster variable `team` in the training data with class number k = 3. Variable `team`  are clustered into the following 3 clusters:
 
-* Cluster 1: CHO, DAL, DEN, DET, HOU, IND, NYK, OKC, ORL, POR, SAS, TOR
-* Cluster 2: ATL, BOS, CHI, CLE, LAC, MEM, MIN, SAC, UTA
-* Cluster 3: BRK, GSW, LAL, MIA, MIL, NOP, PHI, PHO, WAS
-
+* Cluster 1: BRK, GSW, LAL, MIA, MIL, NOP, PHI, POR, UTA
+* Cluster 2: ATL, CHI, CHO, CLE, DAL, DEN, DET, HOU, IND, MEM, MIN, NYK, OKC, ORL, PHO, SAC, SAS, TOR
+* Cluster 3: BOS, LAC, WAS
 
 ```{r, fig.height=3.5}
 
@@ -270,7 +269,7 @@ df_players2 = inner_join(x = df_players,y = team_dict,by = "team") %>%
 ```{r}
 
 rf.grid3 <- expand.grid(
-  mtry = 5:26,
+  mtry = 10:26,
   splitrule = "variance",
   min.node.size = 1:6)
 
@@ -289,10 +288,12 @@ ggplot(rf.fit3, highlight = TRUE)
 
 ### gbm
 
+
+
 ```{r}
-gbm.grid3 <- expand.grid(n.trees = c(1000,2000,3000,4000,5000),
-                        interaction.depth = 2:6,
-                        shrinkage = c(0.001,0.002,0.003),
+gbm.grid3 <- expand.grid(n.trees = c(3000,4000,5000,6000,7000,8000),
+                        interaction.depth = 4:6,
+                        shrinkage = c(0.0007,0.0008,0.001),
                         n.minobsinnode = 1)
 
 set.seed(8106)
@@ -334,18 +335,22 @@ data.frame(
 
 ### Best tree model
 
-Random forest with tuning parameters: 
+Generalized Boosted Regression Modeling (GBM) with tuning parameters: 
 
-* `mytry = 26`: number of variables to possibly split at in each node. 
+* `n.trees = 6000`: the total number of trees to fit
 
-* `min.node.size = 2`: Optimal minimal node size.
+* `interaction.depth = 5`: maximum depth of each tree
 
-Test error: 
+* `shrinkage = 0.0008`: learning rate 
+
+* `n.minobsinnode = 1`: the minimum number of observations in the terminal nodes of the trees
+
+Test error: 4.745948
 
 ```{r}
 
 y_test = df_players[-indexTrain,]$salary
-y_pred <- predict(rf.fit3, newdata = df_players2[-indexTrain,])
+y_pred <- predict(gbm.fit3, newdata = df_players2[-indexTrain,])
 sqrt(mean((y_pred - y_test)^2))
 
 ```
@@ -355,34 +360,21 @@ Variable Importance:
 
 
 ```{r}
-
-df_pred = data.frame(df_players2)
-rownames(df_pred) = rownames(df_players)
-
-
-set.seed(8106)
-vip(rf.fit3, 
-    method = "permute", 
-    train = df_pred[indexTrain,],
-    target = "salary",
-    metric = "RMSE",
-    nsim = 10,
-    pred_wrapper = predict,
-    geom = "col", 
-    all_permutations = TRUE,
-    mapping = aes_string(fill = "Variable")) 
+summary(gbm.fit3$finalModel, las = 2, cBars = 10, cex.names = 0.6)
 ```
 
 Prediction on new observations:
 
 ```{r, warning=FALSE, fig.height = 8, fig.width = 8}
 
+df_pred = data.frame(df_players2)
+rownames(df_pred) = rownames(df_players)
 
-explainer.rf <- lime(df_pred[indexTrain,-24], rf.fit3)
+explainer.gbm <- lime(df_pred[indexTrain,-24], gbm.fit3)
 
-new_obs <- df_pred[-indexTrain,-24][1:6,]
+new_obs <- df_pred[-indexTrain,-24][10:15,]
 explanation.obs <- explain(new_obs,
-                           explainer.rf, 
+                           explainer.gbm, 
                            n_features = 10)
 plot_features(explanation.obs)
 ```
@@ -390,7 +382,7 @@ plot_features(explanation.obs)
 True salary (in million) for new observations: 
 
 ```{r}
-df_pred[-indexTrain,][1:6,] %>% 
+df_pred[-indexTrain,][10:15,] %>% 
   select(salary)
 ```
 
