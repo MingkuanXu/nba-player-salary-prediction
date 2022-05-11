@@ -118,6 +118,7 @@ ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
 
 ## Feature engineering for tree-based models
 
+Tree-based ensembled models including Random forest and Generalized boosted regression are built. We noticed that Categorical variable `team` have 30 classes, which may result in too much dummy variables and cause overfitting of tree-based models. Therefore, we consider clustering `team` into 3 classes according to similar trends in the median and standard deviation of player's salary in each team. We use the new variable `team_cluster` instead of `team` in the following random forest and gbm models.
 
 ```{r}
 df_team = df_players[indexTrain,] %>% 
