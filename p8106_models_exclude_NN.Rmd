@@ -1,5 +1,5 @@
 ---
-title: "P8109 Final - Models except for NN"
+title: "P8106 Final - Models except for NN"
 author: "Mingkuan Xu, Mengfan Luo, Yiqun Jin"
 date: "5/6/2022"
 output: pdf_document
