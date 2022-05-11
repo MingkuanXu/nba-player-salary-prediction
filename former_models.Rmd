@@ -2,7 +2,7 @@
 title: "p8106 - Final Project - NBA Players Salary Prediction"
 author: "Mingkuan Xu, Mengfan Luo, Yiqun Jin"
 date: "5/6/2022"
-output: pdf_document
+output: github_document
 ---
 
 
