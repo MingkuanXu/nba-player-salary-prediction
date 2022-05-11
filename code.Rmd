@@ -106,10 +106,19 @@ Distributions of the two categorical variables, `team` and `position`.
 ```{r}
 par(mfrow=c(1,2))
 plot_team = ggplot(df_players) + geom_bar(aes(team)) + 
-  scale_x_discrete(guide = guide_axis(check.overlap = TRUE))+ theme_bw()
-plot_team
+  scale_x_discrete(guide = guide_axis(check.overlap = TRUE)) + 
+#  scale_x_discrete(guide=guide_axis(n.dodge=2)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 5)) 
 plot_position = ggplot(df_players) + geom_bar(aes(position)) + theme_bw()
-plot_position
+
+figure_0 = ggarrange(plot_team,plot_position,ncol=2,nrow=1,widths = c(2,1))
+#figure_0 = annotate_figure(figure_0, 
+#                top = text_grob("Histograms of Categorical Predictive Variables", 
+#                                face = "bold", size = 15))
+
+ggsave(plot = figure_0, width = 9, height = 3, dpi = 300, filename = "report_figures/figure_1.png")
+
 ```
 
 Distributions of other numeric variables. 
