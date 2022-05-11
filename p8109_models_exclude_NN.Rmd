@@ -1,0 +1,365 @@
+---
+title: "P8109 Final - Models except for NN"
+author: "Mingkuan Xu, Mengfan Luo, Yiqun Jin"
+date: "5/6/2022"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,dpi=300)
+library(tidyverse)
+library(caret)
+library(patchwork)
+library(mgcv)
+library(earth)
+library(vip)
+library(ggpubr)
+library(ranger)
+library(gbm)
+library(factoextra)
+```
+
+# Data Preprocessing
+
+```{r joining datasets}
+df_salary = read_csv("NBA_season2122_player_salary.csv") %>%
+  janitor::clean_names() %>%
+  select(Player=x2,Team=x3,Salary=salary_4) %>%
+  na.omit()
+
+df_salary = df_salary[-1,]
+
+df_stats = read_csv("NBA_season2122_player_stats.csv") %>%
+  rename(Team=Tm) %>%
+  select(-Rk)
+
+df_players = inner_join(x=df_salary,y=df_stats,by=c("Player","Team")) %>% 
+  janitor::clean_names() %>% 
+  distinct()
+
+df_players = df_players %>% 
+  arrange(player,desc(g)) %>% 
+  distinct(player,.keep_all = TRUE)
+
+# Removed variables with missing data and resulted from division of other variables
+df_players = df_players %>% 
+  select(-x3p_percent, -ft_percent, -fg_percent,-x2p_percent,-e_fg_percent)
+
+# The final generated dataset for use: df_player.
+```
+
+
+```{r data cleaning}
+# Convert salary from characters to numbers.
+# Convert categorical variables to factors
+
+df_players = df_players %>% 
+  separate(salary,into = c("symbol", "salary"),1) %>% 
+  select(-symbol)%>% 
+  mutate(salary = as.numeric(salary)/1000000,
+         team = factor(team),
+         pos = factor(pos)) %>% 
+  relocate(salary, .after = last_col())
+
+colnames(df_players) = c("player", "team", "position", "age", "game","game_starting" ,"minute","field_goal", "fg_attempt", "x3p", "x3p_attempt" ,"x2p", "x2p_attempt",   "free_throw",   "ft_attempt", "offensive_rb", "defenssive_rb",  "total_rb" ,   "assistance" ,   "steal" , "block",    "turnover",  "personal_foul", "point", "salary")
+
+df_players = df_players %>% 
+  distinct(player,.keep_all = TRUE) %>%
+  mutate(player = gsub("\\\\.*","",player)) %>%
+  `row.names<-`(., NULL) %>% 
+  column_to_rownames('player')
+```
+
+
+```{r}
+# Convert count data to rate by dividing variable `minute`
+
+df_players = df_players %>% 
+  mutate(field_goal = field_goal/minute,
+         fg_attempt = fg_attempt/minute,
+         x3p = x3p/minute,
+         x3p_attempt = x3p_attempt/minute,
+         x2p = x2p/minute,
+         x2p_attempt = x2p_attempt/minute,
+         free_throw = free_throw/minute,
+         ft_attempt = ft_attempt/minute,
+         offensive_rb = offensive_rb/minute,
+         defenssive_rb = defenssive_rb/minute,
+         total_rb = total_rb/minute,
+         assistance = assistance/minute,
+         steal = steal/minute,
+         block = block/minute,
+         turnover = turnover/minute,
+         personal_foul = personal_foul/minute,
+         point = point/minute) 
+```
+
+
+# Models
+
+```{r}
+# Data partition
+set.seed(8106)
+
+indexTrain <- createDataPartition(y = df_players$salary, p = 0.8, list = FALSE, times = 1)
+df_train <- df_players[indexTrain, ]
+df_test <- df_players[-indexTrain, ]
+df_train_2 = model.matrix(salary ~ ., df_train)[ ,-1]
+df_test_2 = model.matrix(salary ~ ., df_test)[ ,-1]
+x = df_train_2
+y = df_train %>% pull(salary)
+
+ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
+```
+
+## Part 1 Linear regression
+
+### (a) Standard Least-Squared
+
+```{r least squared, echo=FALSE,message=FALSE,warning=FALSE}
+set.seed(8106)
+lm.fit <- train(x, y, method = "lm", trControl = ctrl1)
+
+#summary(lm.fit)
+lm.pred <- predict(lm.fit, newdata = df_test_2)
+lm.mse = mean((lm.pred - df_test$salary)^2)
+# lm.mse
+
+
+```
+
+### (b) Elastic Net (including lasso/ridge)
+
+```{r elastic net, echo = FALSE, message = FALSE, warning = FALSE}
+set.seed(8106)
+elnet.fit <- train(x, y, method = "glmnet",
+                   tuneGrid = expand.grid(alpha = seq(0, 1, length = 11),
+                   lambda = exp(seq(3, -3, length = 100))),
+                   trControl = ctrl1)
+
+elnet.fit$bestTune
+
+myCol <- rainbow(25)
+myPar <- list(superpose.symbol = list(col = myCol),
+              superpose.line = list(col = myCol)) 
+
+plot(elnet.fit, par.settings = myPar)
+
+
+elnet.pred = predict(elnet.fit, newdata = df_test_2)
+elnet.mse = mean((elnet.pred - df_test$salary)^2)
+```
+
+### (c) Principle Component Regression
+
+```{r principal component regression, echo = FALSE, message = FALSE, warning = FALSE}
+set.seed(8106)
+pcr.fit <- train(x, y, method = "pcr", tuneLength = 15, trControl = ctrl1)
+
+pcr.fit$bestTune
+
+pcr.pred = predict(pcr.fit, newdata = df_test_2)
+pcr.mse = mean((pcr.pred - df_test$salary)^2)
+ggplot(pcr.fit, highlight = TRUE)
+
+
+
+```
+
+## Part 2 Generalized Linear Regression
+
+### (a) GAM
+
+```{r GAM, echo=FALSE,message=FALSE,warning=FALSE}
+set.seed(8106)
+
+gam.fit <- gam(salary~
+               s(age)+s(game)+s(game_starting)+s(free_throw)+s(ft_attempt)+s(defenssive_rb)
+               +s(assistance)+s(block)+s(personal_foul)+s(point),
+               data = df_train)
+
+summary(gam.fit)
+gam.pred = predict(gam.fit, newdata = df_test)
+gam.mse = mean((gam.pred - df_test$salary)^2)
+#gam.mse
+```
+
+
+### (b) MARS
+
+```{r MARS, echo = FALSE, message = FALSE, warning = FALSE}
+set.seed(8106)
+mars_grid <- expand.grid(degree = 1:4, 
+                         nprune = 2:8)
+
+mars.fit <- train(x, y,
+                  method = "earth",
+                  tuneGrid = mars_grid,
+                  trControl = ctrl1)
+
+mars.fit$bestTune
+
+ggplot(mars.fit) + theme_bw()
+
+mars.pred = predict(mars.fit, newdata = df_test_2)
+mars.mse = mean((df_test$salary - mars.pred)^2)
+mars.mse
+```
+
+
+## Part 3 Tree-based models
+
+### Feature engineering for tree-based models
+
+Categorical variable `team` have 30 classes, which will resulted in too much dummy variables in our models. Therefore, we consider clustering `team` into fewer class according to similar trends in the median and standard deviation of player's salary in each team.
+
+
+```{r}
+df_team = df_players[indexTrain,] %>% 
+  group_by(team) %>% 
+  summarize(median = median(salary),
+            sd = sd(salary)) %>% 
+  mutate(team = as.character(team))
+
+df_team1 = data.frame(median = df_team$median, sd = df_team$sd)
+rownames(df_team1) = df_team$team
+df_team1  = scale(df_team1)
+
+```
+
+We use k-mean clustering to cluster variable `team` in the training data with class number k = 3. Variable `team`  are clustered into the following 3 clusters:
+
+* Cluster 1: BRK, GSW, LAL, MIA, MIL, NOP, PHI, POR, UTA
+* Cluster 2: ATL, CHI, CHO, CLE, DAL, DEN, DET, HOU, IND, MEM, MIN, NYK, OKC, ORL, PHO, SAC, SAS, TOR
+* Cluster 3: BOS, LAC, WAS
+
+```{r, fig.height=3.5}
+
+set.seed(8106)
+fviz_nbclust(df_team1,
+             FUNcluster = kmeans,
+             method = "silhouette")
+
+km <- kmeans(df_team1, centers = 3, nstart = 30)
+
+km_vis <- fviz_cluster(list(data = df_team1, cluster = km$cluster), 
+                       ellipse.type = "convex", 
+                       geom = c("point","text"),
+                       labelsize = 5, 
+                       palette = "Dark2") + labs(title = "K-means") 
+
+km_vis
+
+team_dict = data.frame(
+  team = df_team$team,
+  team_cluster = factor(unname(km$cluster))
+)
+
+```
+
+
+We add class labels for the newly generated clusters of `team` as `team_cluster`, with values 1, 2, and 3 representing each clusters.
+
+```{r}
+df_players2 = inner_join(x = df_players,y = team_dict,by = "team") %>% 
+  relocate(team_cluster, .before = team) %>% 
+  select(-team)
+  
+```
+
+### (a) Random forest
+
+```{r}
+
+rf.grid3 <- expand.grid(
+  mtry = 10:26,
+  splitrule = "variance",
+  min.node.size = 1:6)
+
+set.seed(8106)
+rf.fit3 <- train(salary ~ . , 
+                df_players2[indexTrain,][1:24],
+                method = "ranger",
+                tuneGrid = rf.grid3,
+                trControl = ctrl1)
+
+rf.fit3$bestTune
+
+ggplot(rf.fit3, highlight = TRUE)
+
+y_test = df_players[-indexTrain,]$salary
+y_pred <- predict(rf.fit3, newdata = df_players2[-indexTrain,])
+rf.mse = mean((y_pred - y_test)^2)
+```
+
+
+### (b) Generalized Boosted Regression Modeling (GBM)
+
+```{r}
+gbm.grid3 <- expand.grid(n.trees = c(3000,4000,5000,6000,7000,8000),
+                        interaction.depth = 4:6,
+                        shrinkage = c(0.0007,0.0008,0.001),
+                        n.minobsinnode = 1)
+
+set.seed(8106)
+gbm.fit3 <- train(salary ~ . , 
+                 df_players2[indexTrain,][1:24], 
+                 method = "gbm",
+                 tuneGrid = gbm.grid3,
+                 trControl = ctrl1,
+                 verbose = FALSE)
+gbm.fit3$bestTune
+
+ggplot(gbm.fit3, highlight = TRUE)
+
+gbm.fit3$finalModel
+
+y_test = df_players[-indexTrain,]$salary
+y_pred <- predict(gbm.fit3, newdata = df_players2[-indexTrain,])
+gbm.mse = mean((y_pred - y_test)^2)
+
+```
+
+
+
+```{r summary, echo=FALSE,message=FALSE,warning=FALSE}
+resamp <- resamples(list(
+  LeastSquare = lm.fit,
+  ElasticNet = elnet.fit,
+  PCR = pcr.fit, 
+  MARS = mars.fit,
+  RF = rf.fit3, 
+  GBM = gbm.fit3))
+
+summary(resamp)$statistics$RMSE %>% knitr::kable(caption = "RMSE of Different Models",digits = 2)
+
+bwplot(resamp, metric = "RMSE")
+```
+
+
+```{r test RMSE, echo=FALSE,message=FALSE,warning=FALSE}
+test_RMSE <- data.frame (
+  Methods = c("Linear","ElasticNet","PCR","GAM","MARS","RandomForest","GBM"),
+  Test_MSE = c(lm.mse,elnet.mse,pcr.mse,gam.mse,mars.mse,rf.mse,gbm.mse)
+) %>%
+  mutate(RMSE=round(sqrt(Test_MSE),digit=2)) %>%
+  select(-Test_MSE) %>%
+  t() %>%
+  as.data.frame()
+
+colnames(test_RMSE) <- test_RMSE[1,]
+test_RMSE <- test_RMSE[-1, ] 
+
+
+test_RMSE %>% knitr::kable(caption = "RMSE of Different Models on Test Set")
+```
+
+
+
+
+
+
+
+
+
