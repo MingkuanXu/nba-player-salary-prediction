@@ -151,10 +151,17 @@ km <- kmeans(df_team1, centers = 3, nstart = 30)
 km_vis <- fviz_cluster(list(data = df_team1, cluster = km$cluster), 
                        ellipse.type = "convex", 
                        geom = c("point","text"),
-                       labelsize = 5, 
-                       palette = "Dark2") + labs(title = "K-means") 
+                       repel = TRUE,
+                       labelsize = 10, 
+                       palette = "Dark2",
+                       options(ggrepel.max.overlaps = Inf))   
+  
+# + labs(title = "K-means") 
 
-km_vis
+
+figure_tree_1  = km_vis + theme_bw() + xlab("Median") + ylab("SD") + 
+  theme(plot.title = element_blank()) 
+ggsave("report_figures/figure_tree_1.png",figure_tree_1,dpi = 300)
 
 team_dict = data.frame(
   team = df_team$team,

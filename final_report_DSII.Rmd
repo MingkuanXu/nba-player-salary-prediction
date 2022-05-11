@@ -105,8 +105,9 @@ The tuning parameter for MARS is `nprune` and `degree`. When attempting to fit t
 
 ## Part 4: Neural Network
 
-Several 2 hidden-layer neural networks were built to fit the data. Despite trying different number of nodes and applying regularization techniques (L2 and dropout), the resulting models still have a noticeable overfitting problem. Given the size of the dataset is very small ($n=442$), the performance of neural network is not as good as some traditional statistical models. It is more useful when the size of dataset is much larger with more variables. 
+Several 2-hidden layer neural networks were built to fit the data. Despite trying different number of nodes and applying regularization techniques (L2 and dropout), the resulting models still have a noticeable overfitting problem. Given the size of the dataset is very small ($n=442$), the performance of neural network is not as good as some traditional statistical models. It is more useful when the size of dataset is much larger with more variables. The optimal model fitted after parameter tuning is a 2-hidden layer neural network with $n_1 = 10$ and $n_2 = 5$ nodes in the first and second layers, applying dropout regularization. The figure shows the resulting MSE in the training and validation sets after 250 epochs.
 
+![MSE of the resulting 2-hidden layer neural network in training and validation sets](report_figures/figure_nn_2.png)
 
 As shown in the figure, as the number of nodes in the first and second hidden layers increases, neural networks can provide very accurate fittings of the training data, with much lower MSEs compared to other methods. However, the predictions are not satisfying when the models are applying to the test data.
 ![Performance of neural networks with different number of hidden layers](report_figures/figure_nn_1.png)
