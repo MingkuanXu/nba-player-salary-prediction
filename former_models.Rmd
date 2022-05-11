@@ -210,6 +210,13 @@ df_players %>%
 
 # Models
 
+## Data Partition
+
+After getting an overview of data from exploratory analysis, we splitted the dataset into training (75%) and testing (20%). We would use 10 fold repeated cross validation to compare each model using training data and then select a best model to predict on testing data. Based on the exploratory analysis, we would build 7 models in three category: 
+1. Linear Regression: (1) simple Linear Regression Model, (2) Elastic-net Model, (3) Principal Component Regression Model (PCR)
+2. Generalized Linear Regression: (4) Generalized Addictive Model (GAM), (5) Multivariate Adaptive Regression Splines Model (MARS)
+3. Other Non-linear Models: (6) Random Forest, (7) Blackbox Model (neural network)
+
 ```{r}
 # Data partition
 set.seed(8106)
@@ -229,16 +236,20 @@ ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
 
 ### (a) Standard Least-Squared
 
+There is no tuning parameter for standard least-squared model.
+
 ```{r least squared, echo=FALSE,message=FALSE,warning=FALSE}
 set.seed(8106)
 lm.fit <- train(x, y, method = "lm", trControl = ctrl1)
 #summary(lm.fit)
 lm.pred <- predict(lm.fit, newdata = df_test_2)
 lm.mse = mean((lm.pred - df_test$salary)^2)
-# lm.mse
+lm.mse
 ```
 
-### (b) Elastic Net (including lasso/ridge)
+### (b) Elastic Net 
+
+The elastic-net model has two parameter, which are alpha for the compromise between LASSO and ridge and lambda for the complexity. The elastic-net model reached its best tune at $\alpha = 1$ (i.e. LASSO model) and lambda = 0.27.
 
 ```{r elastic net, echo = FALSE, message = FALSE, warning = FALSE}
 set.seed(8106)
@@ -246,7 +257,7 @@ elnet.fit <- train(x, y, method = "glmnet",
                    tuneGrid = expand.grid(alpha = seq(0, 1, length = 11),
                    lambda = exp(seq(3, -3, length = 100))),
                    trControl = ctrl1)
-
+elnet.fit$bestTune
 myCol <- rainbow(25)
 myPar <- list(superpose.symbol = list(col = myCol),
               superpose.line = list(col = myCol)) 
@@ -258,6 +269,8 @@ elnet.mse = mean((elnet.pred - df_test$salary)^2)
 ```
 
 ###(c) Principle Component Regression
+
+The tuning parameter of PCR is the number of predictors included in the final model. There are 5 components included in the model with minimum RMSE. 
 
 ```{r principal component regression, echo = FALSE, message = FALSE, warning = FALSE}
 set.seed(8106)
@@ -271,6 +284,8 @@ ggplot(pcr.fit, highlight = TRUE)
 
 ### (a) GAM
 
+There is no tuning parameter for GAM. The GAM model can capture the non-linear trend in the model, but it may have a high variance. `age`, `game_starting`, `assistance`, `personal_foul`, and `point` are statistically significant predictors at 0.0001 significant level.
+
 ```{r GAM, echo=FALSE,message=FALSE,warning=FALSE}
 set.seed(8106)
 
@@ -281,15 +296,17 @@ gam.fit <- gam(salary~
 summary(gam.fit)
 gam.pred = predict(gam.fit, newdata = df_test)
 gam.mse = mean((gam.pred - df_test$salary)^2)
-#gam.mse
+gam.mse
 ```
 
 
 ### (b) MARS
 
+The tuning parameter for MARS is `nprune` and `degree`. When attempting to fit the MARS model, we noticed that the RMSE increased drastically when degree is over 3 and nprune is over 8. Therefore, we would choose the range of degrees as 1:3 and range of nprune as 2:8. When number of terms is 6 and product degree is 2, MARS model reached its best tune and RMSE is lowest. The MARS model selected 6 of 69 terms, and 6 of 54 predictors. And the top 3 important predictors are: `age`, `minute`, `game`. MARS model is highly adaptive comparing with previous models and has a higher prediction accuracy.
+
 ```{r MARS, echo = FALSE, message = FALSE, warning = FALSE}
 set.seed(8106)
-mars_grid <- expand.grid(degree = 1:4, 
+mars_grid <- expand.grid(degree = 1:3, 
                          nprune = 2:8)
 
 mars.fit <- train(x, y,
@@ -298,7 +315,7 @@ mars.fit <- train(x, y,
                   trControl = ctrl1)
 
 mars.fit$bestTune
-
+summary(mars.fit)
 ggplot(mars.fit) + theme_bw()
 
 mars.pred = predict(mars.fit, newdata = df_test_2)
@@ -306,6 +323,9 @@ mars.mse = mean((df_test$salary - mars.pred)^2)
 mars.mse
 ```
 
+## Model Comparison
+
+The CV RMSE are shown as followed. We can see MARS model has lowest RMSE. 
 
 ```{r summary, echo=FALSE,message=FALSE,warning=FALSE}
 resamp <- resamples(list(LeastSquare = lm.fit,ElasticNet = elnet.fit,PCR = pcr.fit, MARS = mars.fit))
