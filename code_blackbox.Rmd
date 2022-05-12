@@ -2,7 +2,9 @@
 title: "P8106 - Final Project"
 author: "Mingkuan Xu (mx2262)"
 date: "5/9/2022"
-output: pdf_document
+output: github_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -283,10 +285,9 @@ learn <- model_3 %>% fit(df_train_scaled_x, df_train_scaled_y,
                         validation_split = 0.2,
                         verbose = 2)
 # loss and accuracy metric for each epoch
-figure_nn_2 = plot(learn) + xlab("Epochs") + ylab("MSE") +
-  theme_bw()
+plot(learn) + xlab("Epochs") + ylab("MSE") + theme_bw()
 
-ggsave(filename = "report_figures/figure_nn_2.png",dpi = 300,width = 6, height = 4)
+# ggsave(filename = "report_figures/figure_nn_2.png",dpi = 300,width = 6, height = 4)
 ```
 
 
