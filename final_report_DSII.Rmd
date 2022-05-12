@@ -61,9 +61,6 @@ The distribution of each variable in the dataset was plotted and examined (see A
 
 From the correlation heat map (figure 1A), some variables were found to be strongly correlated with others, leading to a potential problem of multicolinearity. Such problem could be handled by using penalized models (such as ridge/lasso regression and elastic-net) or ensembled models (such as random forest, boosting, and neural network). From the feature maps (figure 1B), some predictive variables (such as `age`,`game`, `game_starting`,`free_throw`, `personal_foul`, `point`) were found to have non-linear correlations with `salary`. Generalized linear regression models and other non-linear models, including GAM, MARS, random forest and neural network model, could be used to capture such non-linearity.
 
-As for the categorical variable `position` and `team`, extremely high values and large variance in salary were observed in all positions and some teams (see Appendix A).
-
-
 ![Correlation Heatmap and Feature Maps](report_figures/figure2_combined.png)
 
 
@@ -114,7 +111,7 @@ There is no tuning parameter for GAM. The GAM model can capture the non-linear t
 
 #### (5) MARS
 
-The tuning parameter for MARS is `nprune` and `degree`. When attempting to fit the MARS model, we noticed that the RMSE increased drastically when degree is over 3 and nprune is over 8. Therefore, we would choose the range of degrees as 1:4 and range of nprune as 2:8. When number of terms is 6 and product degree is 3, MARS model reached its best tune and RMSE is lowest. The MARS model selected 6 of 69 terms, and 6 of 54 predictors. And the top 3 important predictors are: `age`, `minute`, `game`. MARS model is highly adaptive comparing with previous models and has a higher prediction accuracy (see Appendix B Figure3).
+The tuning parameter for MARS is `nprune` and `degree`. When attempting to fit the MARS model, we noticed that the RMSE increased drastically when degree is over 3 and nprune is over 8. Therefore, we would choose the range of degrees as 1:4 and range of nprune as 2:8. When `nprune = 6` and `degree = 3`, MARS model reached its best tune and RMSE is lowest. 6 of 54 predictors are included in the mdoel, and the top 3 important predictors are: `age`, `minute`, `game`. MARS model is highly adaptive comparing with previous models and has a higher prediction accuracy (see Appendix B Figure3).
 
 ### Part 3: Tree-Based Models 
 
@@ -208,21 +205,33 @@ Take the first case of player Cade Cunningham as an example. Cade's true salary 
 ## Appendices
 
 ### Appendix A - Numeric Variable Distribution
-![Figure A1](report_figures/appendixA_figure1.png)
-![Figure A2](report_figures/appendixA_figure2.png)
-![Figure A3](report_figures/appendixA_figure3.png)
-![Figure A4](report_figures/figure_1.png)
-![Figure A5](report_figures/appendixA_figure4.png)
-![Figure A6](report_figures/appendixA_figure5.png)
+
+![Histograms of Predictive Variables](report_figures/appendixA_figure01.png){height=80%}
+
+\newpage
+
+![Featureplot of Numeric Variables](report_figures/appendixA_figure4.png)
+
+\newpage
 
 ### Appendix B - Linear Regerssion
 
-![Figure B1](report_figures/appendixB_figure1.png)
-![Figure B2](report_figures/appendixB_figure2.png)
-![Figure B3](report_figures/appendixB_figure3.png)
+![Figure B1 Parameter Tuning Plot of Elastic-net Model](report_figures/appendixB_figure1.png)
 
-### Appendix C - Neural Network Model
+![Figure B2 Parameter Tuning of PCR](report_figures/appendixB_figure2.png)
 
-<!--![Figure C](report_figures/appendix_NN_a.pdf) -->
+![Figure B3 Parameter Tuning of MARS](report_figures/appendixB_figure3.png)
 
+\newpage
 
+### Appendix C - Tree-based Models
+
+![Parameter Tuning of of GBM](report_figures/appendixC_figure1.png)
+
+![Parameter Tuning of Random Forest](report_figures/appendixC_figure2.png)
+
+### Appendix D - Neural Network Model
+
+\newpage
+
+![Figure D1 Structure and MSE of the resulting 2-hidden layer neural network](report_figures/figure_nn.png)
