@@ -98,11 +98,11 @@ Standard Least-Squared model is used for a reference of other models, as it may 
 
 #### (2) Elastic Net 
 
-The elastic-net model has two parameters, which are $\alpha$ (compromise between LASSO and ridge) and $\lambda$ (the penalty term limits the number or magnitude of predictor coefficients). The elastic-net model reached its best tune at $\alpha = 0.6$ and $\lambda = 0.44$ (see Appendix B Figure1).
+The elastic-net model has two parameters, which are $\alpha$ (compromise between LASSO and ridge) and $\lambda$ (the penalty term limits the number or magnitude of predictor coefficients). The elastic-net model reached its best tune at $\alpha = 0.6$ and $\lambda = 0.44$ (see Appendix B Figure 9).
 
 #### (3) Principle Component Regression
 
-The tuning parameter of PCR is the number of principal components (PCs) included in the final model. There are 12 PCs included in the model with minimum RMSE (see Appendix B). 
+The tuning parameter of PCR is the number of principal components (PCs) included in the final model. There are 12 PCs included in the model with minimum RMSE (see Appendix B Figure 10). 
 
 ### Part B - Generalized Linear Regression Models
 
@@ -112,17 +112,17 @@ There is no tuning parameter for GAM. The GAM model can capture the non-linear t
 
 #### (5) MARS
 
-The tuning parameter for MARS is `nprune` and `degree`. When attempting to fit the MARS model, we noticed that the RMSE increased drastically when degree is over 3 and nprune is over 8. Therefore, we would choose the range of degrees as 1:4 and range of nprune as 2:8. When `nprune = 6` and `degree = 3`, MARS model reached its best tune and RMSE is lowest. 6 of 54 predictors are included in the mdoel, and the top 3 important predictors are: `age`, `minute`, `game`. MARS model is highly adaptive comparing with previous models and has a higher prediction accuracy (see Appendix B).
+The tuning parameter for MARS is `nprune` and `degree`. When attempting to fit the MARS model, we noticed that the RMSE increased drastically when degree is over 3 and nprune is over 8. Therefore, we would choose the range of degrees as 1:4 and range of nprune as 2:8. When `nprune = 6` and `degree = 3`, MARS model reached its best tune and RMSE is lowest. 6 of 54 predictors are included in the mdoel, and the top 3 important predictors are: `age`, `minute`, `game`. MARS model is highly adaptive comparing with previous models and has a higher prediction accuracy (see Appendix B Figure 11).
 
 ### Part C: Tree-Based Models 
 
 #### (6) Random Forest
 
-Tuning parameter for random forest regression in package `ranger` are `mtry` (number of variables to split at in each node) and `min.node.size` (minimal size of each node). Through 10-fold repeated CV (see Appendix C), the optimal random forest model have parameters `mtry = 26` and `min.node.size = 1`. Random forest preserve the advantage of single decision trees that can handle correlation between variables and non-linearity. However, since here `mtry = 26` equals our total number of variables, this random forest estimator may not well decorrelate single trees, and thus may overfit the dataset. 
+Tuning parameter for random forest regression in package `ranger` are `mtry` (number of variables to split at in each node) and `min.node.size` (minimal size of each node). Through 10-fold repeated CV (see Appendix C Figure 12), the optimal random forest model have parameters `mtry = 26` and `min.node.size = 1`. Random forest preserve the advantage of single decision trees that can handle correlation between variables and non-linearity. However, since here `mtry = 26` equals our total number of variables, this random forest estimator may not well decorrelate single trees, and thus may overfit the dataset. 
 
 #### (7) Generalized Boosted Regression Modeling (GBM)
 
-Tuning parameters for Generalized boosted regression modeling (GBM) are `n.trees ` (total number of trees to fit), `interaction.depth` (maximum depth of each tree), `shrinkage` (learning rate), and `n.minobsinnode ` (minimum number of observations in the terminal nodes). Through 10-fold repeated CV (see Appendix C), the optimal random forest model have parameters `n.trees = 6000`, `interaction.depth = 5`, `shrinkage = 0.0008`, and `n.minobsinnode = 1`.
+Tuning parameters for Generalized boosted regression modeling (GBM) are `n.trees ` (total number of trees to fit), `interaction.depth` (maximum depth of each tree), `shrinkage` (learning rate), and `n.minobsinnode ` (minimum number of observations in the terminal nodes). Through 10-fold repeated CV (see Appendix C Figure 13), the optimal random forest model have parameters `n.trees = 6000`, `interaction.depth = 5`, `shrinkage = 0.0008`, and `n.minobsinnode = 1`.
 
 ### Part D: Neural Network
 
