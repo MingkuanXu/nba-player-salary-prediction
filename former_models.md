@@ -54,7 +54,7 @@ show in all positions and some teams.
 ## Data Partition
 
 After getting an overview of data from exploratory analysis, we splitted
-the dataset into training (75%) and testing (20%). We would use 10 fold
+the dataset into training (80%) and testing (20%). We would use 10 fold
 repeated cross validation to compare each model using training data and
 then select a best model to predict on testing data. Based on the
 exploratory analysis, we would build 8 models in four category: 1.
@@ -71,7 +71,7 @@ Modeling (GBM) 4. Blackbox Model (8) neural network
 
 There is no tuning parameter for standard least-squared model.
 
-    ## [1] 52.62129
+    ## [1] 44.32919
 
 ### (b) Elastic Net
 
@@ -80,7 +80,7 @@ between LASSO and ridge) and lambda (the penalty term limits the number
 or magnitude of predictor coefficients). The elastic-net model reached
 its best tune at *α* = 1 (i.e. LASSO model) and lambda = 0.27.
 
-    ## [1] 0.2717072
+    ## [1] 0.4412332
 
 ![](former_models_files/figure-gfm/elastic%20net-1.png)<!-- -->
 
@@ -89,6 +89,9 @@ its best tune at *α* = 1 (i.e. LASSO model) and lambda = 0.27.
 The tuning parameter of PCR is the number of predictors included in the
 final model. There are 5 components included in the model with minimum
 RMSE.
+
+    ##    ncomp
+    ## 12    12
 
 ![](former_models_files/figure-gfm/principal%20component%20regression-1.png)<!-- -->
 
@@ -112,29 +115,29 @@ statistically significant predictors at 0.0001 significant level.
     ## 
     ## Parametric coefficients:
     ##             Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)    8.151      0.301   27.08   <2e-16 ***
+    ## (Intercept)   8.5293     0.2958   28.84   <2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
     ## Approximate significance of smooth terms:
     ##                    edf Ref.df      F  p-value    
-    ## s(age)           4.722  5.775 14.002  < 2e-16 ***
-    ## s(game)          1.000  1.000  4.324 0.038422 *  
-    ## s(game_starting) 1.532  1.883 23.181  < 2e-16 ***
-    ## s(free_throw)    7.542  8.452  2.095 0.022370 *  
-    ## s(ft_attempt)    2.098  2.759  0.603 0.485917    
-    ## s(defenssive_rb) 1.330  1.585  2.465 0.065744 .  
-    ## s(assistance)    1.114  1.217 17.575 2.90e-05 ***
-    ## s(block)         1.000  1.000  0.009 0.923298    
-    ## s(personal_foul) 7.693  8.529  3.699 0.000214 ***
-    ## s(point)         3.351  4.242  6.044 7.88e-05 ***
+    ## s(age)           4.414  5.455 16.961  < 2e-16 ***
+    ## s(game)          1.695  2.101  4.623  0.00973 ** 
+    ## s(game_starting) 1.482  1.805 25.494  < 2e-16 ***
+    ## s(free_throw)    8.147  8.791  3.083  0.00538 ** 
+    ## s(ft_attempt)    1.000  1.000  0.155  0.69382    
+    ## s(defenssive_rb) 1.000  1.000  1.680  0.19591    
+    ## s(assistance)    1.000  1.000 18.244 2.58e-05 ***
+    ## s(block)         1.000  1.000  2.758  0.09777 .  
+    ## s(personal_foul) 6.851  7.891  5.172 6.56e-06 ***
+    ## s(point)         6.152  7.361  5.415 5.90e-06 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## R-sq.(adj) =  0.652   Deviance explained = 68.5%
-    ## GCV = 33.514  Scale est. = 30.265    n = 334
+    ## R-sq.(adj) =   0.69   Deviance explained = 71.8%
+    ## GCV = 34.237  Scale est. = 30.974    n = 354
 
-    ## [1] 51.72913
+    ## [1] 46.82317
 
 ### (b) MARS
 
@@ -149,28 +152,28 @@ predictors. And the top 3 important predictors are: `age`, `minute`,
 has a higher prediction accuracy.
 
     ##    nprune degree
-    ## 12      6      2
+    ## 19      6      3
 
-    ## Call: earth(x=matrix[334,54], y=c(3.98,3.63,2,9...), keepxy=TRUE, degree=2,
+    ## Call: earth(x=matrix[354,54], y=c(16.41,3.98,3...), keepxy=TRUE, degree=3,
     ##             nprune=6)
     ## 
-    ##                                      coefficients
-    ## (Intercept)                               4.00399
-    ## h(minute-28.7)                            0.80909
-    ## teamWAS * h(free_throw-0.0879121)       146.14964
-    ## teamCLE * h(free_throw-0.0879121)       803.51599
-    ## h(age-22) * h(minute-22.8)                0.17834
-    ## h(game-30) * h(free_throw-0.0879121)      4.82540
+    ##                            coefficients
+    ## (Intercept)                    7.895265
+    ## h(27.8-minute)                -0.331228
+    ## h(minute-27.8)                 1.744475
+    ## h(point-0.513812)             38.165222
+    ## h(26-age) * h(minute-27.8)    -0.420986
+    ## h(age-26) * h(minute-27.8)     0.183362
     ## 
-    ## Selected 6 of 69 terms, and 6 of 54 predictors (nprune=6)
+    ## Selected 6 of 69 terms, and 3 of 54 predictors (nprune=6)
     ## Termination condition: RSq changed by less than 0.001 at 69 terms
-    ## Importance: age, minute, game, free_throw, teamWAS, teamCLE, ...
-    ## Number of terms at each degree of interaction: 1 1 4
-    ## GCV 27.39806    RSS 8426.154    GRSq 0.6863058    RSq 0.7094144
+    ## Importance: minute, x2p-unused, age, point, teamBOS-unused, teamBRK-unused, ...
+    ## Number of terms at each degree of interaction: 1 3 2
+    ## GCV 32.08731    RSS 10509.07    GRSq 0.6794564    RSq 0.7017558
 
 ![](former_models_files/figure-gfm/MARS-1.png)<!-- -->
 
-    ## [1] 40.30051
+    ## [1] 26.58079
 
 ## Model Comparison
 
@@ -179,10 +182,10 @@ RMSE.
 
 |             | Min. | 1st Qu. | Median | Mean | 3rd Qu. | Max. | NA’s |
 |:------------|-----:|--------:|-------:|-----:|--------:|-----:|-----:|
-| LeastSquare | 4.92 |    5.92 |   6.41 | 6.44 |    6.89 | 9.04 |    0 |
-| ElasticNet  | 4.36 |    5.44 |   5.88 | 6.02 |    6.59 | 8.22 |    0 |
-| PCR         | 4.07 |    6.10 |   6.78 | 6.70 |    7.41 | 8.80 |    0 |
-| MARS        | 4.04 |    5.38 |   5.82 | 5.84 |    6.45 | 8.25 |    0 |
+| LeastSquare | 4.41 |    6.12 |   6.85 | 6.79 |    7.46 | 8.75 |    0 |
+| ElasticNet  | 4.57 |    5.95 |   6.37 | 6.45 |    7.06 | 8.55 |    0 |
+| PCR         | 5.17 |    6.24 |   7.17 | 7.14 |    7.87 | 9.34 |    0 |
+| MARS        | 4.05 |    5.25 |   5.89 | 6.03 |    6.71 | 8.74 |    0 |
 
 RMSE of Different Models
 
@@ -190,6 +193,9 @@ RMSE of Different Models
 
 |      | Linear | ElasticNet | PCR  | GAM  | MARS |
 |:-----|:-------|:-----------|:-----|:-----|:-----|
-| RMSE | 7.25   | 7.21       | 7.34 | 7.19 | 6.35 |
+| RMSE | 6.66   | 6.04       | 5.46 | 6.84 | 5.16 |
 
 RMSE of Different Models on Test Set
+
+![Figure A1](report_figures/appendixA_figure1.png) ![Figure A2]()
+\[Figure \]

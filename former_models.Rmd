@@ -3,6 +3,8 @@ title: "p8106 - Final Project - NBA Players Salary Prediction"
 author: "Mingkuan Xu, Mengfan Luo, Yiqun Jin"
 date: "5/6/2022"
 output: github_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 
@@ -169,6 +171,7 @@ corrplot(cor(df_corr_1),type = "lower")
 From numeric variables, we found that `stl`,`x3p`, `age`,`gs` seem to have some non-linear trends.
 
 ```{r, fig.height=4}
+
 theme1 <- trellis.par.get()
 theme1$plot.symbol$col <- rgb(0, 0, 0, 1) 
 theme1$plot.symbol$pch <- 16
@@ -177,23 +180,23 @@ theme1$plot.line$lwd <- 2
 theme1$strip.background$col <- rgb(.0, .2, .6, .2) 
 trellis.par.set(theme1)
 
-df_features = df_players[4:13]
+df_features = df_players[3:23]
 featurePlot(x = df_features, 
             y = df_players$salary,
             plot = "scatter",
             # span = .5,
             labels = c("Predictors","Player Salary (Millions)"), 
             type = c("p", "smooth"), 
-            layout = c(5, 2))
+            layout = c(3, 7))
 
-df_features = df_players[14:23]
+df_features = df_players[c(3, 4, 5, 13, 22,23)]
 featurePlot(x = df_features, 
             y = df_players$salary,
             plot = "scatter",
             # span = .5,
             labels = c("Predictors","Player Salary (Millions)"), 
             type = c("p", "smooth"), 
-            layout = c(5, 2))
+            layout = c(3, 2))
 ```
 
 From categorical variable `position`, extremely high values in salary show in all positions and some teams.
@@ -212,7 +215,7 @@ df_players %>%
 
 ## Data Partition
 
-After getting an overview of data from exploratory analysis, we splitted the dataset into training (75%) and testing (20%). We would use 10 fold repeated cross validation to compare each model using training data and then select a best model to predict on testing data. Based on the exploratory analysis, we would build 8 models in four category: 
+After getting an overview of data from exploratory analysis, we splitted the dataset into training (80%) and testing (20%). We would use 10 fold repeated cross validation to compare each model using training data and then select a best model to predict on testing data. Based on the exploratory analysis, we would build 8 models in four category: 
 1. Linear Regression: (1) simple Linear Regression Model, (2) Elastic-net Model, (3) Principal Component Regression Model (PCR)
 2. Generalized Linear Regression: (4) Generalized Addictive Model (GAM), (5) Multivariate Adaptive Regression Splines Model (MARS)
 3. Tree based Models Models: (6) Random Forest, (7) Generalized Boosted Regression Modeling (GBM)
@@ -222,7 +225,7 @@ After getting an overview of data from exploratory analysis, we splitted the dat
 # Data partition
 set.seed(8106)
 
-indexTrain <- createDataPartition(y = df_players$salary, p = 0.75, list = FALSE, times = 1)
+indexTrain <- createDataPartition(y = df_players$salary, p = 0.8, list = FALSE, times = 1)
 df_train <- df_players[indexTrain, ]
 df_test <- df_players[-indexTrain, ]
 df_train_2 = model.matrix(salary ~ ., df_train)[ ,-1]
@@ -250,7 +253,7 @@ lm.mse
 
 ### (b) Elastic Net 
 
-The elastic-net model has two parameter, which are alpha (compromise between LASSO and ridge) and lambda (the penalty term limits the number or magnitude of predictor coefficients). The elastic-net model reached its best tune at $\alpha = 1$ (i.e. LASSO model) and lambda = 0.27.
+The elastic-net model has two parameter, which are alpha (compromise between LASSO and ridge) and lambda (the penalty term limits the number or magnitude of predictor coefficients). The elastic-net model reached its best tune at $\alpha = 0.6$ and lambda = 0.44.
 
 ```{r elastic net, echo = FALSE, message = FALSE, warning = FALSE}
 set.seed(8106)
@@ -275,7 +278,10 @@ The tuning parameter of PCR is the number of predictors included in the final mo
 
 ```{r principal component regression, echo = FALSE, message = FALSE, warning = FALSE}
 set.seed(8106)
-pcr.fit <- train(x, y, method = "pcr", tuneLength = 20, trControl = ctrl1)
+pcr.fit <- train(x, y, method = "pcr", tuneLength = 15, trControl = ctrl1)
+
+pcr.fit$bestTune
+
 pcr.pred = predict(pcr.fit, newdata = df_test_2)
 pcr.mse = mean((pcr.pred - df_test$salary)^2)
 ggplot(pcr.fit, highlight = TRUE)
@@ -352,4 +358,9 @@ test_RMSE <- test_RMSE[-1, ]
 
 test_RMSE %>% knitr::kable(caption = "RMSE of Different Models on Test Set")
 ```
+
+
+![Figure A1](report_figures/appendixA_figure1.png)
+![Figure A2]()
+![Figure ]
 

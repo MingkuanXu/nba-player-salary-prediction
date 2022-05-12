@@ -60,14 +60,20 @@ For numeric variables, some of them (`gs`, `ft`, `orb`,`blk`), including respons
 
 From the correlation heat map, it is obvious that multicolinearity could be a problem, which we may consider using penalized models (ridge, lasso) or ensembled models (random forest, boosting, neural network) to fix. The feature maps demonstrated that some correlations are non-linear, which we may consider using GAM or MARS to address.
 
+![Correlation Heatmap](report_figures/figure2_correlation.png)
+
 From categorical variable `position` and `team`, extremely high values and large variance in salary show in all positions and some teams.
+
+### Analyzing trends in data
+
+From numeric variables, we found that `age`,`game`, `game_starting`,`free_throw`, `personal_foul`, `point` seem to have some non-linear trends. Therefore, we would choose to use GAM, MARS, random forest and neural network model to predict the salary.
+
+![Featureplot of predictors with non-linear trends](report_figures/figure3_featureplot.png)
 
 
 ## Model Construction
 
-### Data Partition
-
-After getting an overview of data from exploratory analysis, we splitted the dataset into training (75%) and testing (20%). We would use 10 fold repeated cross validation to compare each model using training data and then select a best model to predict on testing data. Based on the exploratory analysis, we would build 8 models in four category: 
+After getting an overview of data from exploratory analysis, we splitted the dataset into training (80%) and testing (20%). We would use 10 fold repeated cross validation to compare each model using training data and then select a best model to predict on testing data. Based on the exploratory analysis, we would build 8 models in four category: 
 1. Linear Regression: (1) simple Linear Regression Model, (2) Elastic-net Model, (3) Principal Component Regression Model (PCR)
 2. Generalized Linear Regression: (4) Generalized Addictive Model (GAM), (5) Multivariate Adaptive Regression Splines Model (MARS)
 3. Tree based Models Models: (6) Random Forest, (7) Generalized Boosted Regression Modeling (GBM)
@@ -81,11 +87,11 @@ There is no tuning parameter for standard least-squared model.
 
 ### (2) Elastic Net 
 
-The elastic-net model has two parameter, which are alpha (compromise between LASSO and ridge) and lambda (the penalty term limits the number or magnitude of predictor coefficients). The elastic-net model reached its best tune at $\alpha = 1$ (i.e. LASSO model) and lambda = 0.27.
+The elastic-net model has two parameter, which are alpha (compromise between LASSO and ridge) and lambda (the penalty term limits the number or magnitude of predictor coefficients). The elastic-net model reached its best tune at $\alpha = 1$ and lambda = 0.44 (see Appendix.B figure1).
 
 ### (3) Principle Component Regression
 
-The tuning parameter of PCR is the number of predictors included in the final model. There are 5 components included in the model with minimum RMSE. 
+The tuning parameter of PCR is the number of predictors included in the final model. There are 12 components included in the model with minimum RMSE (see Appendix.B figure2). 
 
 ## Part 2 Generalized Linear Regression
 
@@ -95,7 +101,7 @@ There is no tuning parameter for GAM. The GAM model can capture the non-linear t
 
 ### (5) MARS
 
-The tuning parameter for MARS is `nprune` and `degree`. When attempting to fit the MARS model, we noticed that the RMSE increased drastically when degree is over 3 and nprune is over 8. Therefore, we would choose the range of degrees as 1:3 and range of nprune as 2:8. When number of terms is 6 and product degree is 2, MARS model reached its best tune and RMSE is lowest. The MARS model selected 6 of 69 terms, and 6 of 54 predictors. And the top 3 important predictors are: `age`, `minute`, `game`. MARS model is highly adaptive comparing with previous models and has a higher prediction accuracy.
+The tuning parameter for MARS is `nprune` and `degree`. When attempting to fit the MARS model, we noticed that the RMSE increased drastically when degree is over 3 and nprune is over 8. Therefore, we would choose the range of degrees as 1:4 and range of nprune as 2:8. When number of terms is 6 and product degree is 3, MARS model reached its best tune and RMSE is lowest. The MARS model selected 6 of 69 terms, and 6 of 54 predictors. And the top 3 important predictors are: `age`, `minute`, `game`. MARS model is highly adaptive comparing with previous models and has a higher prediction accuracy (see Appendix.B figure3).
 
 ## Part 3: Tree based Models Models
 
@@ -136,8 +142,14 @@ As shown in the figure, as the number of nodes in the first and second hidden la
 ![Figure A1](report_figures/appendixA_figure1.png)
 ![Figure A2](report_figures/appendixA_figure2.png)
 ![Figure A3](report_figures/appendixA_figure3.png)
+![Figure A4](report_figures/appendixA_figure4.png)
+![Figure A5](report_figures/appendixA_figure5.png)
 
-### Appendix B - Numeric Variable Distribution
+### Appendix B - Linear Regerssion
+
+![Figure B1](report_figures/appendixB_figure1.png)
+![Figure B2](report_figures/appendixB_figure2.png)
+![Figure B3](report_figures/appendixB_figure3.png)
 
 ### Appendix C - Neural Network Model
 
