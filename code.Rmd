@@ -2,7 +2,7 @@
 title: "code"
 author: "DS2"
 date: "5/6/2022"
-output: github_document
+output: pdf_document
 ---
 
 
@@ -20,7 +20,7 @@ library(ggpubr)
 ```
 
 
-## Part 0 - Data Preprocessing
+## Data Preprocessing
 
 ```{r joining datasets}
 df_salary = read_csv("NBA_season2122_player_salary.csv") %>%
@@ -72,7 +72,7 @@ df_players = df_players %>%
   column_to_rownames('player')
 ```
 
-## Part 1 - Exploratory Analysis 
+## Exploratory Analysis 
 
 Since `minute` stands for minutes played per game, we will divided variables stands for counts by `minute` to get a rate. These variables includes `field_goal`, `fg_attempt`    `x3p`, `x3p_attempt`, `x2p`, `x2p_attempt`,   `free_throw`,  `ft_attempt`, `offensive_rb`  `defenssive_rb`, `total_rb`, `assistance`,`steal`, `block`, `turnover`, `personal_foul` and `point`.
 
@@ -121,7 +121,6 @@ ggsave(plot = figure_0, width = 9, height = 3, dpi = 300, filename = "report_fig
 
 ```
 
-Distributions of other numeric variables. 
 
 ```{r dpi=300}
 plot_data_column = function (data, column) {
@@ -169,8 +168,6 @@ corrplot(cor(df_corr_1),type = "lower")
 
 ### Analyzing trends in data
 
-From numeric variables, we found that `stl`,`x3p`, `age`,`gs` seem to have some non-linear trends.
-
 ```{r, fig.height=4}
 theme1 <- trellis.par.get()
 theme1$plot.symbol$col <- rgb(0, 0, 0, 1) 
@@ -190,7 +187,6 @@ featurePlot(x = df_features,
             layout = c(7, 3))
 ```
 
-From categorical variable `position`, extremely high values in salary show in all positions and some teams.
 
 ```{r fig.height=4}
 df_players %>% 
@@ -203,10 +199,530 @@ df_players %>%
 ```
 
 
+# Model Construction
+
 ```{r}
 # Data partition
 set.seed(8106)
 
-indexTrain <- createDataPartition(y = df_players$salary, p = 0.75, list = FALSE, times = 1)
+indexTrain <- createDataPartition(y = df_players$salary, p = 0.8, list = FALSE, times = 1)
+df_train <- df_players[indexTrain, ]
+df_test <- df_players[-indexTrain, ]
+df_train_2 = model.matrix(salary ~ ., df_train)[ ,-1]
+df_test_2 = model.matrix(salary ~ ., df_test)[ ,-1]
+x = df_train_2
+y = df_train %>% pull(salary)
+
 ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
 ```
+
+## Part A - Linear Regression Models
+
+### (1) Standard Least-Squared
+
+```{r least squared, echo=FALSE,message=FALSE,warning=FALSE}
+set.seed(8106)
+lm.fit <- train(x, y, method = "lm", trControl = ctrl1)
+
+#summary(lm.fit)
+lm.pred <- predict(lm.fit, newdata = df_test_2)
+lm.mse = mean((lm.pred - df_test$salary)^2)
+# lm.mse
+
+
+```
+
+### (2) Elastic Net (including lasso/ridge)
+
+```{r elastic net, echo = FALSE, message = FALSE, warning = FALSE}
+set.seed(8106)
+elnet.fit <- train(x, y, method = "glmnet",
+                   tuneGrid = expand.grid(alpha = seq(0, 1, length = 11),
+                   lambda = exp(seq(3, -3, length = 100))),
+                   trControl = ctrl1)
+
+elnet.fit$bestTune
+
+myCol <- rainbow(25)
+myPar <- list(superpose.symbol = list(col = myCol),
+              superpose.line = list(col = myCol)) 
+
+plot(elnet.fit, par.settings = myPar)
+
+
+elnet.pred = predict(elnet.fit, newdata = df_test_2)
+elnet.mse = mean((elnet.pred - df_test$salary)^2)
+```
+
+### (3) Principle Component Regression
+
+```{r principal component regression, echo = FALSE, message = FALSE, warning = FALSE}
+set.seed(8106)
+pcr.fit <- train(x, y, method = "pcr", tuneLength = 15, trControl = ctrl1)
+
+pcr.fit$bestTune
+
+pcr.pred = predict(pcr.fit, newdata = df_test_2)
+pcr.mse = mean((pcr.pred - df_test$salary)^2)
+ggplot(pcr.fit, highlight = TRUE)
+
+
+
+```
+
+## Part B Generalized Linear Regression
+
+### (4) GAM
+
+```{r GAM, echo=FALSE,message=FALSE,warning=FALSE}
+set.seed(8106)
+
+gam.fit <- gam(salary~
+               s(age)+s(game)+s(game_starting)+s(free_throw)+s(ft_attempt)+s(defenssive_rb)
+               +s(assistance)+s(block)+s(personal_foul)+s(point),
+               data = df_train)
+
+summary(gam.fit)
+gam.pred = predict(gam.fit, newdata = df_test)
+gam.mse = mean((gam.pred - df_test$salary)^2)
+#gam.mse
+```
+
+
+### (5) MARS
+
+```{r MARS, echo = FALSE, message = FALSE, warning = FALSE}
+set.seed(8106)
+mars_grid <- expand.grid(degree = 1:4, 
+                         nprune = 2:8)
+
+mars.fit <- train(x, y,
+                  method = "earth",
+                  tuneGrid = mars_grid,
+                  trControl = ctrl1)
+
+mars.fit$bestTune
+
+ggplot(mars.fit) + theme_bw()
+
+mars.pred = predict(mars.fit, newdata = df_test_2)
+mars.mse = mean((df_test$salary - mars.pred)^2)
+mars.mse
+```
+
+
+## Part C Tree-based models
+
+### Feature engineering for tree-based models
+
+```{r}
+df_team = df_players[indexTrain,] %>% 
+  group_by(team) %>% 
+  summarize(median = median(salary),
+            sd = sd(salary)) %>% 
+  mutate(team = as.character(team))
+
+df_team1 = data.frame(median = df_team$median, sd = df_team$sd)
+rownames(df_team1) = df_team$team
+df_team1  = scale(df_team1)
+
+```
+
+
+```{r, fig.height=3.5}
+
+set.seed(8106)
+fviz_nbclust(df_team1,
+             FUNcluster = kmeans,
+             method = "silhouette")
+
+km <- kmeans(df_team1, centers = 3, nstart = 30)
+
+km_vis <- fviz_cluster(list(data = df_team1, cluster = km$cluster), 
+                       ellipse.type = "convex", 
+                       geom = c("point","text"),
+                       labelsize = 5, 
+                       palette = "Dark2") + labs(title = "K-means") 
+
+km_vis
+
+team_dict = data.frame(
+  team = df_team$team,
+  team_cluster = factor(unname(km$cluster))
+)
+
+```
+
+
+```{r}
+df_players2 = inner_join(x = df_players,y = team_dict,by = "team") %>% 
+  relocate(team_cluster, .before = team) %>% 
+  select(-team)
+  
+```
+
+### (6) Random forest
+
+```{r}
+
+rf.grid3 <- expand.grid(
+  mtry = 10:26,
+  splitrule = "variance",
+  min.node.size = 1:6)
+
+set.seed(8106)
+rf.fit3 <- train(salary ~ . , 
+                df_players2[indexTrain,][1:24],
+                method = "ranger",
+                tuneGrid = rf.grid3,
+                trControl = ctrl1)
+
+rf.fit3$bestTune
+
+ggplot(rf.fit3, highlight = TRUE)
+
+y_test = df_players[-indexTrain,]$salary
+y_pred <- predict(rf.fit3, newdata = df_players2[-indexTrain,])
+rf.mse = mean((y_pred - y_test)^2)
+```
+
+
+### (7) Generalized Boosted Regression Modeling (GBM)
+
+```{r}
+gbm.grid3 <- expand.grid(n.trees = c(3000,4000,5000,6000,7000,8000),
+                        interaction.depth = 4:6,
+                        shrinkage = c(0.0007,0.0008,0.001),
+                        n.minobsinnode = 1)
+
+set.seed(8106)
+gbm.fit3 <- train(salary ~ . , 
+                 df_players2[indexTrain,][1:24], 
+                 method = "gbm",
+                 tuneGrid = gbm.grid3,
+                 trControl = ctrl1,
+                 verbose = FALSE)
+gbm.fit3$bestTune
+
+ggplot(gbm.fit3, highlight = TRUE)
+
+gbm.fit3$finalModel
+
+y_test = df_players[-indexTrain,]$salary
+y_pred <- predict(gbm.fit3, newdata = df_players2[-indexTrain,])
+gbm.mse = mean((y_pred - y_test)^2)
+
+```
+
+
+
+## Part D: Neural Network
+
+### (a) Implemented by package `neuralnet`
+
+```{r}
+# Scale the data
+df_train_scaled = as.data.frame(scale(
+  df_train %>% dplyr::select(-team,-position,-player), 
+  center = TRUE, scale = TRUE))
+
+df_test_scaled = as.data.frame(scale(
+  df_test %>% dplyr::select(-team,-position,-player), 
+  center = TRUE, scale = TRUE))
+```
+
+
+```{r include=FALSE}
+nn <- neuralnet(salary ~ ., 
+                data = df_train_scaled, hidden = c(5, 3), 
+                linear.output = TRUE)
+
+pr.train.nn <- compute(nn, df_train_scaled)
+
+pr.test.nn <- compute(nn, df_test_scaled)
+
+results_1 = 
+  data.frame(predict = pr.train.nn$net.result, 
+                       actual = df_train_scaled$salary) %>%
+  mutate(type = "train")
+
+results_2 = 
+  data.frame(predict = pr.test.nn$net.result, 
+                       actual = df_test_scaled$salary) %>%
+  mutate(type = "test")
+
+results = rbind(results_1,results_2)
+  
+
+ggplot(results) + geom_point(aes(x=predict,y=actual,color=type,group=type)) +
+  labs(title = 'Predictions and Actual Values on Training and Testing Sets') +
+  geom_abline(slope = 1, intercept = 0) +
+  theme_bw()
+
+```
+
+
+```{r}
+
+
+set.seed(8106)
+
+
+nn_with_m_n_layers = function(m,n){
+  
+# Build Neural Network
+nn <- neuralnet(salary ~ ., 
+                data = df_train_scaled, hidden = c(m, n), 
+                linear.output = TRUE)
+plot(nn,rep = "best")
+
+summary(nn)
+
+
+pr.train.nn <- compute(nn, df_train_scaled)
+nn.train.MSE = mean((pr.train.nn$net.result - df_train_scaled$salary)^2)
+nn.train.MSE
+
+pr.test.nn <- compute(nn, df_test_scaled)
+nn.test.MSE = mean((pr.test.nn$net.result - df_test_scaled$salary)^2)
+nn.test.MSE
+
+train.MSE.matrix[m,n] = nn.train.MSE
+test.MSE.matrix[m,n] = nn.test.MSE
+
+results_1 = 
+  data.frame(predict = pr.train.nn$net.result, 
+                       actual = df_train_scaled$salary) %>%
+  mutate(type = "train")
+
+results_2 = 
+  data.frame(predict = pr.test.nn$net.result, 
+                       actual = df_test_scaled$salary) %>%
+  mutate(type = "test")
+
+results = rbind(results_1,results_2)
+  
+
+ggplot(results) + geom_point(aes(x=predict,y=actual,color=type,group=type)) +
+  labs(title = 'Predictions and Actual Values on Training and Testing Sets') +
+  geom_abline(slope = 1, intercept = 0) +
+  theme_bw()
+}
+
+
+matrix.row = 10
+matrix.column = 5
+train.MSE.matrix = matrix(nrow = matrix.row, ncol = matrix.column)
+test.MSE.matrix = matrix(nrow = matrix.row, ncol = matrix.column)
+
+
+# for(m in 9:matrix.row){
+#   for(n in 4:matrix.column){
+#     nn_with_m_n_layers(m,n)
+#   }
+# }
+
+nn_with_m_n_layers(10,5)
+nn_with_m_n_layers(5,3)
+nn_with_m_n_layers(3,1)
+nn_with_m_n_layers(1,1)
+
+lr = lm(salary ~.,
+            data = df_train_scaled)
+
+pr.train.lr = predict(lr, df_train_scaled)
+lr.train.MSE = mean((pr.train.lr - df_train_scaled$salary)^2)
+
+pr.test.lr = predict(lr, df_test_scaled)
+lr.test.MSE = mean((pr.test.lr - df_test_scaled$salary)^2)
+```
+
+
+### (b) Implemented by `keras`
+
+```{r}
+p <- ncol(df_train_scaled) - 1
+model_1 <- keras_model_sequential()
+model_1 %>% 
+  layer_dense(units = 10, activation ="relu", input_shape = 21) %>%
+  layer_dense(units = 5, activation = "relu") %>%
+  layer_dense(units = 1, activation = "linear") 
+
+summary(model_1)
+```
+
+
+```{r}
+# L2 regularization
+model_2 <- keras_model_sequential()
+model_2 %>% 
+  layer_dense(units = 10, activation ="relu", input_shape = p,
+              kernel_regularizer = regularizer_l2(0.001)) %>%
+  layer_batch_normalization() %>%
+  layer_dense(units = 5, activation = "relu",
+              kernel_regularizer = regularizer_l2(0.001)) %>%
+  layer_batch_normalization() %>%
+  layer_dense(units = 1, activation = "linear") 
+
+summary(model_2)
+```
+
+
+```{r}
+# Dropout
+model_3 <- keras_model_sequential()
+model_3 %>% 
+  layer_dense(units = 10, activation ="relu", input_shape = p) %>%
+  layer_batch_normalization() %>%
+  layer_dense(units = 5, activation = "relu") %>%
+  layer_batch_normalization() %>%
+  layer_dense(units = 1, activation = "linear") 
+
+summary(model_3)
+
+model_3 %>% compile(loss = "mse",
+                   optimizer = optimizer_rmsprop())
+#                   metrics = "mse")
+```
+
+
+```{r}
+set.seed(8106)
+
+df_train_noc = as.data.frame(df_train %>% dplyr::select(-team,-player,-position))
+df_train_scaled_x = scale(model.matrix(salary~., df_train_noc)[,-1],center = TRUE, scale = TRUE)
+
+df_train_scaled_y = df_train$salary
+
+df_test_noc = as.data.frame(df_test %>% dplyr::select(-team,-player,-position))
+df_test_scaled_x = scale(model.matrix(salary~., df_test_noc)[,-1],center = TRUE, scale = TRUE)
+df_test_scaled_y = df_test$salary
+
+learn <- model_3 %>% fit(df_train_scaled_x, df_train_scaled_y, 
+                        epochs = 250,
+                        batch_size = 32,
+                        validation_split = 0.2,
+                        verbose = 2)
+# loss and accuracy metric for each epoch
+plot(learn) + xlab("Epochs") + ylab("MSE") + theme_bw()
+
+# ggsave(filename = "report_figures/figure_nn_2.png",dpi = 300,width = 6, height = 4)
+```
+
+
+```{r}
+score <- 
+  model_3 %>% evaluate(df_test_scaled_x, df_test_scaled_y)
+score
+```
+
+## Model Comparasion and Final Model Interpretation
+
+
+### Model Comparison
+
+#### CV RMSE
+
+```{r summary, echo=FALSE,message=FALSE,warning=FALSE}
+resamp <- resamples(list(
+  LeastSquare = lm.fit,
+  ElasticNet = elnet.fit,
+  PCR = pcr.fit, 
+  MARS = mars.fit,
+  GAM = gam.fit,
+  RF = rf.fit3, 
+  GBM = gbm.fit3))
+
+summary(resamp)$statistics$RMSE %>% knitr::kable(caption = "RMSE of Different Models",digits = 2)
+
+bwplot(resamp, metric = "RMSE")
+```
+
+#### Test error
+
+```{r test RMSE, echo=FALSE,message=FALSE,warning=FALSE}
+test_RMSE <- data.frame (
+  Methods = c("Linear","ElasticNet","PCR","GAM","MARS","RandomForest","GBM"),
+  Test_MSE = c(lm.mse,elnet.mse,pcr.mse,gam.mse,mars.mse,rf.mse,gbm.mse)
+) %>%
+  mutate(RMSE=round(sqrt(Test_MSE),digit=2)) %>%
+  select(-Test_MSE) %>%
+  t() %>%
+  as.data.frame()
+
+colnames(test_RMSE) <- test_RMSE[1,]
+test_RMSE <- test_RMSE[-1, ] 
+
+
+test_RMSE %>% knitr::kable(caption = "RMSE of Different Models on Test Set")
+```
+
+
+### Final Model: GBM
+
+Our best model is Generalized Boosted Regression Modeling (GBM) with tuning parameters: 
+
+* `n.trees = 6000`: the total number of trees to fit
+
+* `interaction.depth = 5`: maximum depth of each tree
+
+* `shrinkage = 0.0008`: learning rate 
+
+* `n.minobsinnode = 1`: the minimum number of observations in the terminal nodes of the trees
+
+Variable Importance:
+
+```{r}
+summary(gbm.fit3$finalModel, las = 2, cBars = 10, cex.names = 0.6)
+```
+
+test RMSE is 4.745948.
+
+```{r}
+
+y_test_gbm = df_players[-indexTrain,]$salary
+y_pred_gbm <- predict(gbm.fit3, newdata = df_players2[-indexTrain,])
+sqrt(mean((y_pred_gbm - y_test_gbm)^2))
+
+```
+
+Given GBM is a black-box model, we refer to `lime` package to achieve explanations of the result of the model on new observations, by fitting a simpler model to the permuted data with the above 15 most important features. We randomly selected 6 observations of the test data. The players' name, true salary (in million), and predicted salary from GBM are:
+
+
+```{r}
+
+df_pred = data.frame(df_players2)
+rownames(df_pred) = rownames(df_players)
+
+test_player = rownames(df_players[-indexTrain,])
+
+new_pred = data.frame(
+  player = test_player[10:15],
+  true_salary = y_test_gbm[10:15],
+  predicted_salary = y_pred_gbm[10:15]) %>% 
+  knitr::kable(caption = "True and Predicted Salary of 6 Random New Observarions")
+
+new_pred
+
+```
+
+
+```{r, warning=FALSE, fig.height = 8, fig.width = 8}
+
+explainer.gbm <- lime(df_pred[indexTrain,-24], gbm.fit3)
+
+new_obs <- df_pred[-indexTrain,-24][10:15,]
+explanation.obs <- explain(new_obs,
+                           explainer.gbm, 
+                           n_features = 10)
+
+plot_features(explanation.obs)
+```
+
+
+
+
+
+
+
+
