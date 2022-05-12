@@ -78,16 +78,17 @@ There is no tuning parameter for standard least-squared model.
 The elastic-net model has two parameter, which are alpha (compromise
 between LASSO and ridge) and lambda (the penalty term limits the number
 or magnitude of predictor coefficients). The elastic-net model reached
-its best tune at *α* = 1 (i.e. LASSO model) and lambda = 0.27.
+its best tune at *α* = 0.6 and lambda = 0.44.
 
-    ## [1] 0.4412332
+    ##     alpha    lambda
+    ## 637   0.6 0.4412332
 
 ![](former_models_files/figure-gfm/elastic%20net-1.png)<!-- -->
 
 \#\#\#(c) Principle Component Regression
 
 The tuning parameter of PCR is the number of predictors included in the
-final model. There are 5 components included in the model with minimum
+final model. There are 12 components included in the model with minimum
 RMSE.
 
     ##    ncomp
@@ -144,7 +145,7 @@ statistically significant predictors at 0.0001 significant level.
 The tuning parameter for MARS is `nprune` and `degree`. When attempting
 to fit the MARS model, we noticed that the RMSE increased drastically
 when degree is over 3 and nprune is over 8. Therefore, we would choose
-the range of degrees as 1:3 and range of nprune as 2:8. When number of
+the range of degrees as 1:4 and range of nprune as 2:8. When number of
 terms is 6 and product degree is 2, MARS model reached its best tune and
 RMSE is lowest. The MARS model selected 6 of 69 terms, and 6 of 54
 predictors. And the top 3 important predictors are: `age`, `minute`,
@@ -196,6 +197,3 @@ RMSE of Different Models
 | RMSE | 6.66   | 6.04       | 5.46 | 6.84 | 5.16 |
 
 RMSE of Different Models on Test Set
-
-![Figure A1](report_figures/appendixA_figure1.png) ![Figure A2]()
-\[Figure \]

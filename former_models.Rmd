@@ -261,7 +261,7 @@ elnet.fit <- train(x, y, method = "glmnet",
                    tuneGrid = expand.grid(alpha = seq(0, 1, length = 11),
                    lambda = exp(seq(3, -3, length = 100))),
                    trControl = ctrl1)
-elnet.fit$bestTune$lambda
+elnet.fit$bestTune
 myCol <- rainbow(25)
 myPar <- list(superpose.symbol = list(col = myCol),
               superpose.line = list(col = myCol)) 
@@ -274,7 +274,7 @@ elnet.mse = mean((elnet.pred - df_test$salary)^2)
 
 ###(c) Principle Component Regression
 
-The tuning parameter of PCR is the number of predictors included in the final model. There are 5 components included in the model with minimum RMSE. 
+The tuning parameter of PCR is the number of predictors included in the final model. There are 12 components included in the model with minimum RMSE. 
 
 ```{r principal component regression, echo = FALSE, message = FALSE, warning = FALSE}
 set.seed(8106)
@@ -309,11 +309,11 @@ gam.mse
 
 ### (b) MARS
 
-The tuning parameter for MARS is `nprune` and `degree`. When attempting to fit the MARS model, we noticed that the RMSE increased drastically when degree is over 3 and nprune is over 8. Therefore, we would choose the range of degrees as 1:3 and range of nprune as 2:8. When number of terms is 6 and product degree is 2, MARS model reached its best tune and RMSE is lowest. The MARS model selected 6 of 69 terms, and 6 of 54 predictors. And the top 3 important predictors are: `age`, `minute`, `game`. MARS model is highly adaptive comparing with previous models and has a higher prediction accuracy.
+The tuning parameter for MARS is `nprune` and `degree`. When attempting to fit the MARS model, we noticed that the RMSE increased drastically when degree is over 3 and nprune is over 8. Therefore, we would choose the range of degrees as 1:4 and range of nprune as 2:8. When number of terms is 6 and product degree is 2, MARS model reached its best tune and RMSE is lowest. The MARS model selected 6 of 69 terms, and 6 of 54 predictors. And the top 3 important predictors are: `age`, `minute`, `game`. MARS model is highly adaptive comparing with previous models and has a higher prediction accuracy.
 
 ```{r MARS, echo = FALSE, message = FALSE, warning = FALSE}
 set.seed(8106)
-mars_grid <- expand.grid(degree = 1:3, 
+mars_grid <- expand.grid(degree = 1:4, 
                          nprune = 2:8)
 
 mars.fit <- train(x, y,
@@ -358,9 +358,3 @@ test_RMSE <- test_RMSE[-1, ]
 
 test_RMSE %>% knitr::kable(caption = "RMSE of Different Models on Test Set")
 ```
-
-
-![Figure A1](report_figures/appendixA_figure1.png)
-![Figure A2]()
-![Figure ]
-
