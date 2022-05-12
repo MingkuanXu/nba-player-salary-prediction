@@ -75,7 +75,7 @@ To condense the 30-class categorical variable `team` into fewer dummy variables,
 
 ![Clustering on variable team](report_figures/figure_tree_1.png)
 
-In the tree-based models, the replacement of `team` with `team_cluster` led to a higher prediction accuracy. For other models, the variable `team`was still used for model construction.
+In the tree-based models, the replacement of `team` with `team_cluster` led to a higher prediction accuracy. For other models, the variable `team` was still used for model construction.
 
 
 ## Model Construction
@@ -112,21 +112,21 @@ There is no tuning parameter for GAM. The GAM model can capture the non-linear t
 
 #### (5) MARS
 
-The tuning parameter for MARS is `nprune` and `degree`. When attempting to fit the MARS model, we noticed that the RMSE increased drastically when degree is over 3 and nprune is over 8. Therefore, we would choose the range of degrees as 1:4 and range of nprune as 2:8. When `nprune = 6` and `degree = 3`, MARS model reached its best tune and RMSE is lowest. 6 of 54 predictors are included in the mdoel, and the top 3 important predictors are: `age`, `minute`, `game`. MARS model is highly adaptive comparing with previous models and has a higher prediction accuracy (see Appendix B Figure 9C).
+The tuning parameters for MARS are `nprune` and `degree`. When attempting to fit the MARS model, we noticed that the RMSE increased drastically when degree was over 3 and nprune was over 8. Therefore, we chose the range of degrees as 1:4 and range of `nprune`s as 2:8. When `nprune = 6` and `degree = 3`, MARS model reached its best tune and RMSE was the lowest. 6 of 54 predictors were included in the model, and the top 3 important predictors were: `age`, `minute`, `game`. MARS model is highly adaptive comparing with previous models and has a higher prediction accuracy (see Appendix B Figure 9C).
 
 ### Part C: Tree-Based Models 
 
 #### (6) Random Forest
 
-Tuning parameter for random forest regression in package `ranger` are `mtry` (number of variables to split at in each node) and `min.node.size` (minimal size of each node). Through 10-fold repeated CV (see Appendix C Figure 12), the optimal random forest model have parameters `mtry = 26` and `min.node.size = 1`. Random forest preserve the advantage of single decision trees that can handle correlation between variables and non-linearity. However, since here `mtry = 26` equals our total number of variables, this random forest estimator may not well decorrelate single trees, and thus may overfit the dataset. 
+Tuning parameter for random forest regression in package `ranger` are `mtry` (number of variables to split at in each node) and `min.node.size` (minimal size of each node). Through 10-fold repeated CV (see Appendix C Figure 12), the optimal random forest model had parameters `mtry = 26` and `min.node.size = 1`. Random forest preserves the advantage of single decision trees that can handle correlation between variables and non-linearity. However, since here `mtry = 26` equals our total number of variables, thus the random forest estimator may not well decorrelate single trees, and thus may overfit the dataset. 
 
 #### (7) Generalized Boosted Regression Modeling (GBM)
 
-Tuning parameters for Generalized boosted regression modeling (GBM) are `n.trees ` (total number of trees to fit), `interaction.depth` (maximum depth of each tree), `shrinkage` (learning rate), and `n.minobsinnode ` (minimum number of observations in the terminal nodes). Through 10-fold repeated CV (see Appendix C Figure 13), the optimal random forest model have parameters `n.trees = 6000`, `interaction.depth = 5`, `shrinkage = 0.0008`, and `n.minobsinnode = 1`.
+Tuning parameters for Generalized boosted regression modeling (GBM) are `n.trees ` (total number of trees to fit), `interaction.depth` (maximum depth of each tree), `shrinkage` (learning rate), and `n.minobsinnode ` (minimum number of observations in the terminal nodes). Through 10-fold repeated CV (see Appendix C Figure 13), the optimal random forest model had parameters `n.trees = 6000`, `interaction.depth = 5`, `shrinkage = 0.0008`, and `n.minobsinnode = 1`.
 
 ### Part D: Neural Network
 
-Several 2-hidden layer neural networks were built to fit the data. The optimal model fitted after parameter tuning is a 2-hidden layer neural network with $n_1 = 10$ and $n_2 = 5$ nodes in the first and second layers, applying dropout regularization. Figure 3B shows the resulting MSE in the training and validation sets after 250 epochs.
+Several 2-hidden layer neural networks were built to fit the data. The optimal model fitted after parameter tuning is a 2-hidden layer neural network with $n_1 = 10$ and $n_2 = 5$ nodes in the first and second layers (Figure 3A), applying dropout regularization. Figure 3B shows the resulting MSE in the training and validation sets after 250 epochs.
 
 
 As shown in Figure 3C, as the number of nodes in the first and second hidden layers increases, neural networks can provide very accurate fittings of the training data, with much lower MSEs compared to other methods. However, the predictions are not satisfying when the models are applying to the test data.
@@ -141,18 +141,18 @@ Despite trying different number of nodes and applying regularization techniques 
 
 ### Model Comparison
 
-The 10-fold CV RMSE (validation set RMSE for neural network) and test set RMSE for all candidate models are shown in Table 2. The GBM model has the best performance in terms of both CV and test errors. 
+The 10-fold CV RMSE (validation set RMSE for neural network) and test set RMSE for all candidate models are shown in Table 2. The GBM has the best performance in terms of CV RMSE. 
 
 Table: Summary of Model Performance
 
 |             |Linear|ElasticNet| PCR  | GAM  | MARS | RandomForest | GBM  | NeuralNetwork |
 |:------------|:-----|:---------|:-----|:-----|:-----|:-------------|:-----| :-------------|
-|Training RMSE| 6.79 |   6.45   | 7.16 | 6.84 | 6.06 |     5.42     | 5.41 |     6.40      |
+| CV RMSE| 6.79 |   6.45   | 7.16 | 6.84 | 6.06 |     5.42     | 5.41 |     6.40      |
 |  Test RMSE  | 6.66 |   6.04   | 5.39 | 6.84 | 5.16 |     4.83     | 4.75 |     6.64      |
 
 ### Final Model Interpretation
 
-Based on the CV RMSE and validation set RMSE,  our best model is the Generalized Boosted Regression Modeling (GBM) with tuning parameters: 
+Based on the CV RMSE and validation set RMSE,  our best model is the GBM with tuning parameters: 
 
 * `n.trees = 6000`
 
@@ -166,9 +166,9 @@ Based on the CV RMSE and validation set RMSE,  our best model is the Generalized
 
 ![Variable Importance of GBM model](report_figures/figure_tree_3.png)
 
-With our fitted GBM model, we can make prediction on new observations. The RMSE on our test data is 4.745948.
+With our fitted GBM model, we can make predictions on new observations. The RMSE on our test data is 4.745948, which is the best among all the 8 models.
 
-Given that GBM is a black-box model, we refer to `lime` package to achieve explanations of the result of the model on new observations, by fitting a simpler model to the permuted data with the above 15 most important features. Table 3 displays 6 randomly selected observations from the test data. The players' name, true salary (in million), and predicted salary from GBM are shown.
+Given that GBM is a black-box model, we refer to the `lime` package to explain the predictions of the model on new observations, by fitting a simpler model to the permuted data with the above 10 most important features. Table 3 displays 6 randomly selected observations from the test data. The players' name, true salary (in millions), and predicted salary from GBM are shown.
 
 Table: Prediction on Randomly Selected New Observations
 
@@ -181,20 +181,20 @@ Table: Prediction on Randomly Selected New Observations
 | D’Angelo Russell |   30.013500 |        14.735256 |
 | Danuel House Jr. |    2.045094 |         4.792719 |
 
-The explanation of the GBM model from lime are shown in Figure 5. Inside the plot, the x-axis shows the relative strength of each variables, and positive values (blue) show that the the variable increase the value of the prediction, while the negative values (red) decrease the prediction value. 
+The explanation of the GBM model from `lime` are shown in Figure 5. Inside the plot, the x-axis shows the relative strength of each variable, and positive values (blue) show that the the variable increases the value of the prediction, while the negative values (red) decrease the prediction value. 
 
 ![Explanation of final GBM model from lime package](report_figures/figure_tree_4.png){height=50%}
 
-Take the first case of player Cade Cunningham as an example. Cade's true salary is 10.050120 million. His predicted salary from GBM is 8.590868 million, which are quite similar to each other. Among the 10 most important variables, factors `mintue > 90`, `point > 0.5`,  `game_starting > 43.8`, `assistance > 0.1241`, `fg_attempt > 0.401` and `x2p_attempt > 0.269` increases Cade's salary, while factors `age <= 23`, `turnover > 0.065`, `0.057 < free_throw <= 0.082` and `team_cluster = 2` decreases his salary.
+Take the first case of player Cade Cunningham as an example. Cade's true salary is 10.050120 millions. His predicted salary from GBM is 8.590868 millions, which are quite similar to each other. Among the 10 most important variables, factors `mintue > 90`, `point > 0.5`,  `game_starting > 43.8`, `assistance > 0.1241`, `fg_attempt > 0.401` and `x2p_attempt > 0.269` increase Cade's salary, while factors `age <= 23`, `turnover > 0.065`, `0.057 < free_throw <= 0.082` and `team_cluster = 2` decrease his salary.
 
 
 ## Conclusion
 
-In this project, we explored different ways of building statistical models to predict the salary of NBA players based on their game statistics. We preprocessed the original raw data by removing missing values, joining datasets, and deriving more meaningful variables based on the existing ones. We then conducted an exploratory analysis to detect useful patterns in variable distribution and their correlations. To deal with the problems emerging from the preliminary analysis, such as co-linearity, non-linearity, and a large number of dummy variables, we did feature engineering to collapse categories, conducted variable selection to reduce model dimensions, applied various regularization techniques to prevent model overfitting, and introduced more sophisticated statistical methods to capture non-linear relationships. Among the 8 models fitted, we selected the GBM as the final predictive model after evaluating their performances on cross validation RMSE. Applying the final model on the test set, it also achieved a small RMSE value, indicating an excellent prediction accuracy and a low level of over-fitting. Other models did not achieve the same level of prediction accuracy as the GBM, either underfitting the data with higher RMSE on the training set or fitting the training data too well (particularly, in the case of the neural network model).
+In this project, we explored different ways of building statistical models to predict the salary of NBA players based on their game statistics. We preprocessed the original raw data by removing missing values, joining datasets, and deriving more meaningful variables based on the existing ones. We then conducted an exploratory analysis to detect useful patterns in variable distribution and their correlations. To deal with the problems emerging from the preliminary analysis, such as co-linearity, non-linearity, and a large number of dummy variables, we did feature engineering to collapse categories, conducted variable selection to reduce model dimensions, applied various regularization techniques to prevent model overfitting, and introduced more sophisticated statistical methods to capture non-linear relationships. Among the 8 models fitted, we selected the GBM as the final predictive model after evaluating their performances on cross validation RMSE. Applying the final model on the test set, it also achieved a small RMSE value, indicating an excellent prediction accuracy and a low level of over-fitting. Other models did not achieve the same level of prediction accuracy as the GBM, either underfitting the data with higher CV RMSE or fitting the training data too well (particularly, in the case of the neural network model).
 
 From the GBM model, we also gained insights into important variables that influence the player's salary, among which the top 10 variables are `minute`, `age`, `point`, `free_throw`, `fg_attempt`, `game_starting`, `assistance`, `ft_attempt`, `team_cluster`, and `defensive_rb`. These findings are consistent with our understanding of factors that commonly affect the income of NBA players.
 
-The study has several limitations. Interaction analysis can be conducted in the family of linear regression models. In building the neural network, we only used trained the multilayer perceptron with the ReLU activation functions. Several other model structures and activation functions are worth trying in the future.  The model accuracy can be further improved by introducing new variables. For example, the current salary level of a player should be more related to his performance in the year before making the new contract. Therefore, apart from the statistics for 2021-2022 season, player data from previous seasons can also be included in the analysis. Furthermore, some players having a high salary may suffer injuries in recent games; injury data can also be taken into account.
+The study has several limitations. Interaction analysis can be conducted in the family of linear regression models. In building the neural network, we only trained the multilayer perceptron model with the ReLU activation functions. Several other model structures and activation functions are worth trying in the future. The model accuracy can be further improved by introducing new variables. For example, the current salary level of a player should be more related to his performance in the year before making a new contract. Therefore, apart from the statistics for the 2021-2022 season, player data from previous seasons can also be included in the analysis. Furthermore, some players having a high salary may suffer injuries in recent games; injury data can also be taken into account.
 
 \newpage
 
