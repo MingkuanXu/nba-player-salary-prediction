@@ -98,11 +98,11 @@ Standard Least-Squared model is used for a reference of other models, as it may 
 
 #### (2) Elastic Net 
 
-The elastic-net model has two parameters, which are $\alpha$ (compromise between LASSO and ridge) and $\lambda$ (the penalty term limits the number or magnitude of predictor coefficients). The elastic-net model reached its best tune at $\alpha = 0.6$ and $\lambda = 0.44$ (see Appendix B Figure 9).
+The elastic-net model has two parameters, which are $\alpha$ (compromise between LASSO and ridge) and $\lambda$ (the penalty term limits the number or magnitude of predictor coefficients). The elastic-net model reached its best tune at $\alpha = 0.6$ and $\lambda = 0.44$ (see Appendix B Figure 9A).
 
 #### (3) Principle Component Regression
 
-The tuning parameter of PCR is the number of principal components (PCs) included in the final model. There are 12 PCs included in the model with minimum RMSE (see Appendix B Figure 10). 
+The tuning parameter of PCR is the number of principal components (PCs) included in the final model. There are 12 PCs included in the model with minimum RMSE (see Appendix B Figure 9B). 
 
 ### Part B - Generalized Linear Regression Models
 
@@ -112,7 +112,7 @@ There is no tuning parameter for GAM. The GAM model can capture the non-linear t
 
 #### (5) MARS
 
-The tuning parameter for MARS is `nprune` and `degree`. When attempting to fit the MARS model, we noticed that the RMSE increased drastically when degree is over 3 and nprune is over 8. Therefore, we would choose the range of degrees as 1:4 and range of nprune as 2:8. When `nprune = 6` and `degree = 3`, MARS model reached its best tune and RMSE is lowest. 6 of 54 predictors are included in the mdoel, and the top 3 important predictors are: `age`, `minute`, `game`. MARS model is highly adaptive comparing with previous models and has a higher prediction accuracy (see Appendix B Figure 11).
+The tuning parameter for MARS is `nprune` and `degree`. When attempting to fit the MARS model, we noticed that the RMSE increased drastically when degree is over 3 and nprune is over 8. Therefore, we would choose the range of degrees as 1:4 and range of nprune as 2:8. When `nprune = 6` and `degree = 3`, MARS model reached its best tune and RMSE is lowest. 6 of 54 predictors are included in the mdoel, and the top 3 important predictors are: `age`, `minute`, `game`. MARS model is highly adaptive comparing with previous models and has a higher prediction accuracy (see Appendix B Figure 9C).
 
 ### Part C: Tree-Based Models 
 
@@ -208,8 +208,6 @@ The study has several limitations. Interaction analysis can be conducted in the 
 
 
 
-\newpage
-
 ## Appendices
 
 ### Appendix A - Numeric Variable Distribution
@@ -226,17 +224,17 @@ The study has several limitations. Interaction analysis can be conducted in the 
 
 ### Appendix B - Linear Regerssion
 
-![Parameter Tuning Plot of Elastic-net Model](report_figures/appendixB_figure1.png)
+![Parameter Tuning Plot of (A) Elastic-net Model; (B) PCR; (C) MARS ](report_figures/figure_appendix_B.png)
 
-![Parameter Tuning of PCR](report_figures/appendixB_figure2.png)
 
-![Parameter Tuning of MARS](report_figures/appendixB_figure3.png)
+
+
 
 \newpage
 
 ### Appendix C - Tree-based Models
 
-![Parameter Tuning of Random Forest](report_figures/appendixC_figure2.png)
+![Parameter Tuning of Random Forest](report_figures/appendixC_1.png)
 
 ![Parameter Tuning of of GBM](report_figures/appendixC_figure1.png)
 
