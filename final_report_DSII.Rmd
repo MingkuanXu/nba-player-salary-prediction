@@ -66,9 +66,9 @@ From categorical variable `position` and `team`, extremely high values and large
 
 ### Analyzing trends in data
 
-From numeric variables, we found that `age`,`game`, `game_starting`,`free_throw`, `personal_foul`, `point` seem to have some non-linear trends. Therefore, we would choose to use GAM, MARS, random forest and neural network model to predict the salary.
+From numeric variables, we found that `age`,`game`, `game_starting`,`free_throw`, `personal_foul`, `point` seem to have some non-linear trends. Therefore, non-linear models, including GAM, MARS, random forest and neural network model, were used to predict the salary.
 
-![Featureplot of predictors with non-linear trends](report_figures/figure3_featureplot.png)
+![Featureplot of predictors with non-linear trends](report_figures/figure_3_featureplot.png)
 
 
 ## Model Construction
@@ -79,37 +79,37 @@ After getting an overview of data from exploratory analysis, we splitted the dat
 3. Tree based Models Models: (6) Random Forest, (7) Generalized Boosted Regression Modeling (GBM)
 4. Blackbox Model (8) neural network
 
-## Part 1 Linear regression
+### Part A - Linear Regression Models
 
-### (1) Standard Least-Squared
+#### (1) Standard Least-Squared
 
 There is no tuning parameter for standard least-squared model.
 
-### (2) Elastic Net 
+#### (2) Elastic Net 
 
-The elastic-net model has two parameter, which are alpha (compromise between LASSO and ridge) and lambda (the penalty term limits the number or magnitude of predictor coefficients). The elastic-net model reached its best tune at $\alpha = 1$ and lambda = 0.44 (see Appendix.B figure1).
+The elastic-net model has two parameter, which are alpha (compromise between LASSO and ridge) and lambda (the penalty term limits the number or magnitude of predictor coefficients). The elastic-net model reached its best tune at $\alpha = 1$ and $\lambda = 0.44$ (see Appendix.B figure1).
 
-### (3) Principle Component Regression
+#### (3) Principle Component Regression
 
 The tuning parameter of PCR is the number of predictors included in the final model. There are 12 components included in the model with minimum RMSE (see Appendix.B figure2). 
 
-## Part 2 Generalized Linear Regression
+### Part B - Generalized Linear Regression Models
 
-### (4) GAM
+#### (4) GAM
 
 There is no tuning parameter for GAM. The GAM model can capture the non-linear trend in the model, but it may have a high variance. `age`, `game_starting`, `assistance`, `personal_foul`, and `point` are statistically significant predictors at 0.0001 significant level.
 
-### (5) MARS
+#### (5) MARS
 
 The tuning parameter for MARS is `nprune` and `degree`. When attempting to fit the MARS model, we noticed that the RMSE increased drastically when degree is over 3 and nprune is over 8. Therefore, we would choose the range of degrees as 1:4 and range of nprune as 2:8. When number of terms is 6 and product degree is 3, MARS model reached its best tune and RMSE is lowest. The MARS model selected 6 of 69 terms, and 6 of 54 predictors. And the top 3 important predictors are: `age`, `minute`, `game`. MARS model is highly adaptive comparing with previous models and has a higher prediction accuracy (see Appendix.B figure3).
 
-## Part 3: Tree based Models Models
+### Part 3: Tree-Based Models 
 
-### (6) Random Forest
+#### (6) Random Forest
 
-### (7) Generalized Boosted Regression Modeling (GBM)
+#### (7) Generalized Boosted Regression Modeling (GBM)
 
-## Part 4: Neural Network
+### Part 4: Neural Network
 
 Several 2-hidden layer neural networks were built to fit the data. Despite trying different number of nodes and applying regularization techniques (L2 and dropout), the resulting models still have a noticeable overfitting problem. Given the size of the dataset is very small ($n=442$), the performance of neural network is not as good as some traditional statistical models. It is more useful when the size of dataset is much larger with more variables. The optimal model fitted after parameter tuning is a 2-hidden layer neural network with $n_1 = 10$ and $n_2 = 5$ nodes in the first and second layers, applying dropout regularization. The figure shows the resulting MSE in the training and validation sets after 250 epochs.
 
