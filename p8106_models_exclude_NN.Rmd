@@ -270,6 +270,8 @@ df_players2 = inner_join(x = df_players,y = team_dict,by = "team") %>%
 
 ### (a) Random forest
 
+Tuning parameter for random forest regression in package `ranger` are `mtry`, number of variables to split at in each node, and `min.node.size`, minimal size of each node. Through 10-fold repeated cv, the optimal random forest model have parameters `mtry = 26` and `min.node.size = 1`. Random forest preserve the advantage of single decision trees that can handle correlation between variables and non-linearity. However, since here `mtry = 26` equals our total number of variables, this random forest estimator may not well decorrelate single trees, and thus may overfit the dataset. 
+
 ```{r}
 
 rf.grid3 <- expand.grid(
@@ -295,6 +297,8 @@ rf.mse = mean((y_pred - y_test)^2)
 
 
 ### (b) Generalized Boosted Regression Modeling (GBM)
+
+Tuning parameters for Generalized boosted regression modeling (GBM) are `n.trees `, the total number of trees to fit; `interaction.depth`: maximum depth of each tree; `shrinkage`, learning rate; and  `n.minobsinnode `, the minimum number of observations in the terminal nodes of the trees. Through 10-fold repeated cv, the optimal random forest model have parameters `n.trees = 6000`, `interaction.depth = 5`, `shrinkage = 0.0008`, and `n.minobsinnode = 1`.
 
 ```{r}
 gbm.grid3 <- expand.grid(n.trees = c(3000,4000,5000,6000,7000,8000),

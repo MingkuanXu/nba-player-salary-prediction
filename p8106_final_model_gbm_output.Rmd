@@ -20,6 +20,7 @@ library(ranger)
 library(gbm)
 library(factoextra)
 library(lime)
+library(viridis)
 ```
 
 
@@ -118,7 +119,6 @@ ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
 
 ## Feature engineering for tree-based models
 
-Tree-based ensembled models including Random forest and Generalized boosted regression are built. We noticed that Categorical variable `team` have 30 classes, which may result in too much dummy variables and cause overfitting of tree-based models. Therefore, we consider clustering `team` into 3 classes according to similar trends in the median and standard deviation of player's salary in each team. We use the new variable `team_cluster` instead of `team` in the following random forest and gbm models.
 
 ```{r}
 df_team = df_players[indexTrain,] %>% 
@@ -142,9 +142,14 @@ We use k-mean clustering to cluster variable `team` in the training data with cl
 ```{r, fig.height=3.5}
 
 set.seed(8106)
-fviz_nbclust(df_team1,
+
+
+figure_tree_1_a = fviz_nbclust(df_team1,
              FUNcluster = kmeans,
-             method = "silhouette")
+             method = "silhouette") +
+  xlab("Number of Cluster k") + ylab("Average Silhouette Width") + 
+  labs(title = "Optimal Number of Clusters")
+figure_tree_1_a 
 
 km <- kmeans(df_team1, centers = 3, nstart = 30)
 
@@ -159,9 +164,11 @@ km_vis <- fviz_cluster(list(data = df_team1, cluster = km$cluster),
 # + labs(title = "K-means") 
 
 
-figure_tree_1  = km_vis + theme_bw() + xlab("Median") + ylab("SD") + 
+figure_tree_1_b  = km_vis + theme_bw() + xlab("Median") + ylab("SD") + 
   theme(plot.title = element_blank()) 
-ggsave("report_figures/figure_tree_1.png",figure_tree_1,dpi = 300)
+
+figure_tree_1 = ggarrange(figure_tree_1_a,figure_tree_1_b)
+ggsave("report_figures/figure_tree_1.png",figure_tree_1,dpi = 300,width=9,height=4)
 
 team_dict = data.frame(
   team = df_team$team,
@@ -210,8 +217,9 @@ gbm.fit3 <- train(salary ~ . ,
                  verbose = FALSE)
 gbm.fit3$bestTune
 
-ggplot(gbm.fit3, highlight = TRUE)
+figure_tree_2 = ggplot(gbm.fit3, highlight = TRUE) + theme_bw()
 
+ggsave("report_figures/figure_tree_2.png",figure_tree_2,dpi=300,width=9,height=3)
 gbm.fit3$finalModel
 
 ```
@@ -222,7 +230,22 @@ Variable Importance:
 10 most important variables (computed from permuting OOB data) are `minute`, `age`, `point`, `free_throw`, `fg_attempt`, `game_starting`, `assistance`, `ft_attempt`, `team_cluster`, and `defensive_rb.` 
 
 ```{r}
+pdf("report_figures/figure_tree_3.pdf")
+dev.off()
+
+par(mar = c(50, 80, 2, 2))
 summary(gbm.fit3$finalModel, las = 2, cBars = 10, cex.names = 0.6)
+
+vi_scores <- vi(gbm.fit3$finalModel) %>% head(10)
+
+figure_tree_3 = ggplot(vi_scores,aes(x = reorder(Variable, Importance, sum), 
+                     y = Importance,fill=Importance)) + geom_bar(stat="identity") + 
+  coord_flip() + theme_bw() + scale_fill_viridis() + xlab("Variable") 
+
+ggsave("report_figures/figure_tree_3.png",figure_tree_3,dpi=300,height = 5,width = 9)
+
+vip(gbm.fit3$finalModel,aesthetics = list(size = 3)) 
+  
 ```
 
 With our fitted GBM model, we can make prediction on new observations. The RMSE on our test data is 4.745948.
