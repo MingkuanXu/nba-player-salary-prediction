@@ -70,13 +70,33 @@ From numeric variables, we found that `age`,`game`, `game_starting`,`free_throw`
 
 ![Featureplot of predictors with non-linear trends](report_figures/figure_3_featureplot.png)
 
+From categorical variable `position`, extremely high values in salary show in all positions and some teams (see Appendix A figure5).
+
+## Feature Engineering
+
+Categorical variable `team` have 30 classes, which will result in too much dummy variables in our models. Therefore, we consider clustering `team` into fewer class according to similar trends in the median and standard deviation of player's salary in each team. We choose number of clusters k = 3 based on average silhouette width and `team` are clustered into the following 3 clusters:
+
+* Cluster 1: BRK, GSW, LAL, MIA, MIL, NOP, PHI, POR, UTA
+* Cluster 2: ATL, CHI, CHO, CLE, DAL, DEN, DET, HOU, IND, MEM, MIN, NYK, OKC, ORL, PHO, SAC, SAS, TOR
+* Cluster 3: BOS, LAC, WAS
+
+The resulting new variable is named `team_cluster`.
+
+![Clustering on variable team](report_figures/figure_tree_1.png)
+
+In tree-based models, we replace variable `team` with the newly generated variable `team_cluster` to achieve higher prediction accuracy. For the rest of our models, we still use variable `team` for model construction.
+
 
 ## Model Construction
 
 After getting an overview of data from exploratory analysis, we splitted the dataset into training (80%) and testing (20%). We would use 10 fold repeated cross validation to compare each model using training data and then select a best model to predict on testing data. Based on the exploratory analysis, we would build 8 models in four category: 
+
 1. Linear Regression: (1) simple Linear Regression Model, (2) Elastic-net Model, (3) Principal Component Regression Model (PCR)
+
 2. Generalized Linear Regression: (4) Generalized Addictive Model (GAM), (5) Multivariate Adaptive Regression Splines Model (MARS)
+
 3. Tree based Models Models: (6) Random Forest, (7) Generalized Boosted Regression Modeling (GBM)
+
 4. Blackbox Model (8) neural network
 
 ### Part A - Linear Regression Models
@@ -105,9 +125,15 @@ The tuning parameter for MARS is `nprune` and `degree`. When attempting to fit t
 
 ### Part 3: Tree-Based Models 
 
+Categorical variable `team` have 30 classes, which will result in too much dummy variables in our models. Therefore, we consider clustering `team` into fewer class according to similar trends in the median and standard deviation of player's salary in each team. We replace `team` with newly generated variable `team_cluster`, which contains values 1, 2, and 3 representing each clusters.
+
 #### (6) Random Forest
 
+Tuning parameter for random forest regression in package `ranger` are `mtry`, number of variables to split at in each node; and `min.node.size`, minimal size of each node. Through 10-fold repeated cv, the optimal random forest model have parameters `mtry = 26` and `min.node.size = 1`. Random forest preserve the advantage of single decision trees that can handle correlation between variables and non-linearity. However, since here `mtry = 26` equals our total number of variables, this random forest estimator may not well decorrelate single trees, and thus may overfit the dataset. 
+
 #### (7) Generalized Boosted Regression Modeling (GBM)
+
+Tuning parameters for Generalized boosted regression modeling (GBM) are `n.trees `, the total number of trees to fit; `interaction.depth`: maximum depth of each tree; `shrinkage`, learning rate; and  `n.minobsinnode `, the minimum number of observations in the terminal nodes of the trees. Through 10-fold repeated cv, the optimal random forest model have parameters `n.trees = 6000`, `interaction.depth = 5`, `shrinkage = 0.0008`, and `n.minobsinnode = 1`.
 
 ### Part 4: Neural Network
 
@@ -118,7 +144,50 @@ Several 2-hidden layer neural networks were built to fit the data. Despite tryin
 As shown in the figure, as the number of nodes in the first and second hidden layers increases, neural networks can provide very accurate fittings of the training data, with much lower MSEs compared to other methods. However, the predictions are not satisfying when the models are applying to the test data.
 ![Performance of neural networks with different number of hidden layers](report_figures/figure_nn_1.png)
 
-## Model Comparasion
+## Model Comparasion and Final Model Interpretation
+
+### Model Comparison
+
+The 10-fold CV RMSE (validation set rmse for neural network) and test RMSE for all our candidate models are shown in the following table. Generalized Boosted Regression Model have the lowest CV RMSE, thus we will select GBM as our final model.
+
+
+|             |Linear|ElasticNet| PCR  | GAM  | MARS | RandomForest | GBM  | NeuralNetwork |
+|:------------|:-----|:---------|:-----|:-----|:-----|:-------------|:-----| :-------------|
+|Training RMSE| 6.79 |   6.45   | 7.16 | 6.84 | 6.06 |     5.42     | 5.41 |     6.40      |
+|  Test RMSE  | 6.66 |   6.04   | 5.39 | 6.84 | 5.16 |     4.83     | 4.75 |     6.64      |
+
+### Final Model Interpretation
+
+Our best model is Generalized Boosted Regression Modeling (GBM) with tuning parameters: 
+
+* `n.trees = 6000`
+
+* `interaction.depth = 5`
+
+* `shrinkage = 0.0008`:
+
+* `n.minobsinnode = 1`
+
+10 most important variables (computed from permuting OOB data) are `minute`, `age`, `point`, `free_throw`, `fg_attempt`, `game_starting`, `assistance`, `ft_attempt`, `team_cluster`, and `defensive_rb.` 
+
+![Variable Importance of GBM model](report_figures/figure_tree_3.png)
+With our fitted GBM model, we can make prediction on new observations. The RMSE on our test data is 4.745948.
+
+Given that GBM is a black-box model, we refer to `lime` package to achieve explanations of the result of the model on new observations, by fitting a simpler model to the permuted data with the above 15 most important features. We randomly selected 6 observations of the test data. The players' name, true salary (in million), and predicted salary from GBM are:
+
+| player           | true_salary | predicted_salary |
+|:-----------------|------------:|-----------------:|
+| Cade Cunningham  |   10.050120 |         8.590867 |
+| Cam Reddish      |    4.670160 |         3.627087 |
+| Christian Wood   |   13.666667 |        14.730414 |
+| Corey Kispert    |    3.383640 |         3.248053 |
+| D’Angelo Russell |   30.013500 |        14.735256 |
+| Danuel House Jr. |    2.045094 |         4.792719 |
+
+The explanation of the GBM model from lime are shown in the following figure. Inside the plot, the x-axis shows the relative strength of each variables, and positive values (blue) show that the the variable increase the value of the prediction, while the negative values (red) decrease the prediction value. 
+
+![Explanation of final GBM model from lime package](report_figures/figure_tree_4.png)
+Take the first case of player Cade Cunningham as an example. Cade's true salary is 10.050120 million. His predicted salary from GBM is 8.590868 million, which are quite similar to each other. Among the 10 most important variables, factors `mintue > 90`, `point > 0.5`,  `game_starting > 43.8`, `assistance > 0.1241`, `fg_attempt > 0.401` and `x2p_attempt > 0.269` increases Cade's salary, while factors `age <= 23`, `turnover > 0.065`, `0.057 < free_throw <= 0.082` and `team_cluster = 2` decreases his salary.
 
 
 ## Conclusion
