@@ -1,23 +1,25 @@
 ---
 title: "P8106 - Final Project - NBA Players Salary Prediction"
 author: "Mingkuan Xu, Mengfan Luo, Yiqun Jin"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ## Introduction
 
-For teams in the National Basketball Association (NBA), a key strategy to win more games is to properly allocate their salary cap - an agreement that places a limit on the amount of money that a team can spend on players' salaries. How to evaluate the performance of each NBA player and give a suitable level of salary is a complicated problem. In this project, we intend to predict the salary of NBA players in the 2021-2022 season based on their game statistics. We collected game statistics that are commonly used to evaluate players from the NBA official website, built both linear and non-linear models, including linear regression, elastic net regression, principle component regression (PCR), generalized addictive model (GAM), multivariate adaptive regression spline (MARS) model, random forest and neural network on selected feature variables, and compared these models to determine a final predictive model. 
+For teams in the National Basketball Association (NBA), a key strategy to win more games is to properly allocate their salary cap - an agreement that places a limit on the amount of money that a team can spend on players' salaries. How to evaluate the performance of each NBA player and give a suitable level of salary is a complicated problem. In this project, we intend to predict the salary of NBA players in the 2021-2022 season based on their game statistics. We collected game statistics that are commonly used to evaluate players from the NBA official website, built linear, generalized linear, tree-based, and blackbox models, and conducted model comparison to determine a final predictive model. 
 
 ## Data Preprocessing
 
-We will conduct data analysis and model construction based on two datasets on NBA players' contracted salary [1] and performance statistics per game [2] in 2021-2022. The following steps are included in our data preparation:
+The data used for exploratory analysis and model construction are based on two datasets: the NBA players' contracted salary dataset [1] and game performance statistics dataset [2] in 2021-2022. The data were preprocessed using the following pipeline:
 
  - Two original datasets were inner joined by players and teams
  - Kept only one record with most number of games played for each of players, given a player may transfer to other teams during the session and have multiple records.
  - Removed 5 variables with missing values caused by division of other existing variables. 
- - Divided count variables (`field_goal`, `free_throw`, etc.) by variable `minute` to convert them to efficiency
+ - Divided count variables (`field_goal`, `free_throw`, etc.) by variable `minute` to convert them to efficiency.
 
-The final cleaned dataset has 442 records and 24 variables, including 2 categorical variables, 21 numerical variables and 1 numeric response variable `salary`.
+The final cleaned dataset contained 442 records and 24 variables, including 2 categorical variables, 21 numerical variables and 1 numeric response variable `salary`.
 
 | Variable Name|  Meaning                                      | Varianble Type         |
 |:------------ |:----------------------------------------------|:-----------------------|
@@ -50,54 +52,42 @@ The final cleaned dataset has 442 records and 24 variables, including 2 categori
 
 ### Univariate Analysis
 
-The following plots show distribution of each univariable. For categorical variables `team` and `position`, they are distributed quite evenly. There are 30 unique values in `team`, which may result in too many dummy variables in the model. Therefore, we may consider exclude `team` or cluster it into fewer classes in selected models. 
-
-![Histograms of categorical predictive variables](report_figures/figure_1.png)
-
-For numeric variables, some of them (`gs`, `ft`, `orb`,`blk`), including response `salary` are skewed, with some players have extremely high salary. Visualization for all variables are enclosed in Appendix A.
+The distribution of each variable in the dataset was plotted and examined (see Appendix.A). Categorical variables `team` and `position` were distributed quite evenly. While 30 unique values in `team` might lead to too many dummy variables in the model, the variable was considered to be excluded or clustered into fewer classes for model fitting. For numeric variables, some of them (`gs`, `ft`, `orb`,`blk`), including response `salary` are skewed, with some players have extremely high salary.
 
 ### Correlation Analysis
 
-From the correlation heat map, it is obvious that multicolinearity could be a problem, which we may consider using penalized models (ridge, lasso) or ensembled models (random forest, boosting, neural network) to fix. The feature maps demonstrated that some correlations are non-linear, which we may consider using GAM or MARS to address.
+From the correlation heat map (figure 1A), some variables were found to be strongly correlated with others, leading to a potential problem of multicolinearity. Such problem could be handled by using penalized models (such as ridge/lasso regression and elastic-net) or ensembled models (such as random forest, boosting, and neural network). From the feature maps (figure 1B), some predictive variables (such as `age`,`game`, `game_starting`,`free_throw`, `personal_foul`, `point`) were found to have non-linear correlations with `salary`. Generalized linear regression models and other non-linear models, including GAM, MARS, random forest and neural network model, could be used to capture such non-linearity.
 
-![Correlation Heatmap](report_figures/figure2_correlation.png)
+As for the categorical variable `position` and `team`, extremely high values and large variance in salary were observed in all positions and some teams (see Appendix.A).
 
-From categorical variable `position` and `team`, extremely high values and large variance in salary show in all positions and some teams.
 
-### Analyzing trends in data
+![Correlation Heatmap and Feature Maps](report_figures/figure2_combined.png)
 
-From numeric variables, we found that `age`,`game`, `game_starting`,`free_throw`, `personal_foul`, `point` seem to have some non-linear trends. Therefore, non-linear models, including GAM, MARS, random forest and neural network model, were used to predict the salary.
-
-![Featureplot of predictors with non-linear trends](report_figures/figure_3_featureplot.png)
-
-From categorical variable `position`, extremely high values in salary show in all positions and some teams (see Appendix A figure5).
 
 ## Feature Engineering
 
-Categorical variable `team` have 30 classes, which will result in too much dummy variables in our models. Therefore, we consider clustering `team` into fewer class according to similar trends in the median and standard deviation of player's salary in each team. We choose number of clusters k = 3 based on average silhouette width and `team` are clustered into the following 3 clusters:
+To condense the 30-class categorical variable `team` into fewer dummy variables, we tried clustering `team` into fewer classes based on the median and standard deviation of player's salary in each team. The number of clusters $k = 3$ was chosen based on average silhouette width. The resulting clusters of `team` were stored in a new variable`team_cluster` and presented below :
 
 * Cluster 1: BRK, GSW, LAL, MIA, MIL, NOP, PHI, POR, UTA
 * Cluster 2: ATL, CHI, CHO, CLE, DAL, DEN, DET, HOU, IND, MEM, MIN, NYK, OKC, ORL, PHO, SAC, SAS, TOR
 * Cluster 3: BOS, LAC, WAS
 
-The resulting new variable is named `team_cluster`.
-
 ![Clustering on variable team](report_figures/figure_tree_1.png)
 
-In tree-based models, we replace variable `team` with the newly generated variable `team_cluster` to achieve higher prediction accuracy. For the rest of our models, we still use variable `team` for model construction.
+In the tree-based models, the replacement of `team` with `team_cluster` led to a higher prediction accuracy. For other models, the variable `team`was still used for model construction.
 
 
 ## Model Construction
 
-After getting an overview of data from exploratory analysis, we splitted the dataset into training (80%) and testing (20%). We would use 10 fold repeated cross validation to compare each model using training data and then select a best model to predict on testing data. Based on the exploratory analysis, we would build 8 models in four category: 
+After having an overview of the data, we splitted the dataset into training (80%) and test (20%) set, used 10-fold repeated cross validation to compare each model using training data, and evaluated the model performances based on test error. We built 8 types of models in four categories: 
 
-1. Linear Regression: (1) simple Linear Regression Model, (2) Elastic-net Model, (3) Principal Component Regression Model (PCR)
+1. Linear Regression Models: Standard Linear Regression Model, Elastic Net Model, Principal Component Regression Model (PCR)
 
-2. Generalized Linear Regression: (4) Generalized Addictive Model (GAM), (5) Multivariate Adaptive Regression Splines Model (MARS)
+2. Generalized Linear Regression: Generalized Addictive Model (GAM), Multivariate Adaptive Regression Splines Model (MARS)
 
-3. Tree based Models Models: (6) Random Forest, (7) Generalized Boosted Regression Modeling (GBM)
+3. Tree based Models Models: Random Forest (RF), Generalized Boosted Regression Modeling (GBM)
 
-4. Blackbox Model (8) neural network
+4. Blackbox Model: Neural Network
 
 ### Part A - Linear Regression Models
 
@@ -142,13 +132,14 @@ Several 2-hidden layer neural networks were built to fit the data. Despite tryin
 ![MSE of the resulting 2-hidden layer neural network in training and validation sets](report_figures/figure_nn_2.png)
 
 As shown in the figure, as the number of nodes in the first and second hidden layers increases, neural networks can provide very accurate fittings of the training data, with much lower MSEs compared to other methods. However, the predictions are not satisfying when the models are applying to the test data.
+
 ![Performance of neural networks with different number of hidden layers](report_figures/figure_nn_1.png)
 
 ## Model Comparasion and Final Model Interpretation
 
 ### Model Comparison
 
-The 10-fold CV RMSE (validation set rmse for neural network) and test RMSE for all our candidate models are shown in the following table. Generalized Boosted Regression Model have the lowest CV RMSE, thus we will select GBM as our final model.
+The 10-fold CV RMSE (validation set rmse for neural network) and test set RMSE for all candidate models are shown in the following table. The GBM model has the best performance in terms of both cv and test errors. 
 
 
 |             |Linear|ElasticNet| PCR  | GAM  | MARS | RandomForest | GBM  | NeuralNetwork |
@@ -158,7 +149,7 @@ The 10-fold CV RMSE (validation set rmse for neural network) and test RMSE for a
 
 ### Final Model Interpretation
 
-Our best model is Generalized Boosted Regression Modeling (GBM) with tuning parameters: 
+Based on the following Our best model is the Generalized Boosted Regression Modeling (GBM) with tuning parameters: 
 
 * `n.trees = 6000`
 
@@ -211,8 +202,9 @@ Take the first case of player Cade Cunningham as an example. Cade's true salary 
 ![Figure A1](report_figures/appendixA_figure1.png)
 ![Figure A2](report_figures/appendixA_figure2.png)
 ![Figure A3](report_figures/appendixA_figure3.png)
-![Figure A4](report_figures/appendixA_figure4.png)
-![Figure A5](report_figures/appendixA_figure5.png)
+![Figure A4](report_figures/figure_1.png)
+![Figure A5](report_figures/appendixA_figure4.png)
+![Figure A6](report_figures/appendixA_figure5.png)
 
 ### Appendix B - Linear Regerssion
 
